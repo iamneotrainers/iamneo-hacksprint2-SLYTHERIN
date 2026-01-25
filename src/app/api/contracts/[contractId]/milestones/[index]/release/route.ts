@@ -57,6 +57,24 @@ export async function POST(
         // TODO: Call smart contract to release funds
         // await releaseEscrowFunds(contract.smart_contract_address, milestoneIndex);
 
+        // Create Transaction Record (Credit to Freelancer)
+        const { error: txnError } = await supabase
+            .from('transactions')
+            .insert({
+                user_id: contract.freelancer_id,
+                project_id: contract.project_id,
+                amount: releaseAmount,
+                type: 'credit',
+                category: 'project_payment',
+                description: `Payment for milestone ${milestoneIndex + 1}: ${milestone.title}`,
+                status: 'completed',
+                payment_method: 'wallet'
+            });
+
+        if (txnError) {
+            console.error('Error recording transaction:', txnError);
+        }
+
         // Create notification for freelancer
         if (contract) {
             const projectTitle = (contract as any).project?.title || 'project';

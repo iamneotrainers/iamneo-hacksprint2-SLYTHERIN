@@ -85,6 +85,25 @@ export async function POST(
             return NextResponse.json({ error: contractError.message }, { status: 500 });
         }
 
+        // 5. Record Transaction (Escrow Funding)
+        const { error: transactionError } = await supabase
+            .from('transactions')
+            .insert({
+                user_id: user.id,
+                project_id: proposal.project_id,
+                amount: proposal.proposed_budget, // Debit amount
+                type: 'debit',
+                category: 'project_payment', // categorized as project payment/escrow
+                description: `Escrow funding for project: ${proposal.project.title}`,
+                status: 'completed',
+                payment_method: 'wallet'
+            });
+
+        if (transactionError) {
+            console.error('Error recording transaction:', transactionError);
+            // Consider rolling back contract creation or flagging for admin
+        }
+
         // TODO: Deploy smart contract to blockchain and lock funds
         // const contractAddress = await deployEscrowContract({
         //     amount: proposal.proposed_budget,
