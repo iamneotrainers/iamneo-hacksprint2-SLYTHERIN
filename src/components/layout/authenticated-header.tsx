@@ -892,7 +892,7 @@ export default function AuthenticatedHeader() {
                   <div className="flex items-center space-x-2 text-sm cursor-pointer hover:text-green-300">
                     <Wallet className="h-4 w-4 text-green-400" />
                     <span className="text-green-400 font-medium">
-                      {walletUser?.balance ? `${walletUser.balance} MATIC` : '₹0'}
+                      {walletUser?.tokenBalance ? `${parseFloat(walletUser.tokenBalance).toFixed(2)} TRT` : (walletUser?.balance ? `${walletUser.balance} ETH` : '₹0')}
                     </span>
                   </div>
                 </Link>

@@ -109,9 +109,13 @@ export function WalletConnectSection() {
                                     <CheckCircle className="h-5 w-5 text-green-600" />
                                 </div>
                                 <div>
-                                    <p className="font-semibold text-gray-900">Wallet Connected</p>
+                                    <p className="font-semibold text-gray-900">Wallet Connected (Sepolia TRT)</p>
                                     <div className="flex items-center gap-2 mt-1">
                                         <code className="text-sm font-mono text-gray-700">
+                                            {walletUser?.tokenBalance ? `${parseFloat(walletUser.tokenBalance).toFixed(4)} TRT` : 'Loading...'}
+                                        </code>
+                                        <span className="text-gray-400">|</span>
+                                        <code className="text-xs text-gray-500">
                                             {formatAddress(walletUser?.walletAddress || '')}
                                         </code>
                                         <Button variant="ghost" size="sm" onClick={copyAddress} className="h-6 w-6 p-0">
@@ -140,8 +144,8 @@ export function WalletConnectSection() {
                         {/* Link to Account */}
                         {authUser?.wallet_address ? (
                             <div className={`p-4 rounded-lg border ${isWalletLinked
-                                    ? 'bg-green-50 border-green-200'
-                                    : 'bg-yellow-50 border-yellow-200'
+                                ? 'bg-green-50 border-green-200'
+                                : 'bg-yellow-50 border-yellow-200'
                                 }`}>
                                 <div className="flex items-start gap-3">
                                     {isWalletLinked ? (
