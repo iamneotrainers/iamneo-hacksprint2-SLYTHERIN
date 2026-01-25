@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Code, Palette, Smartphone, Globe, Briefcase, PenTool } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,25 +18,25 @@ const skillsData = [
 ];
 
 const locationsData = [
-  "United States", "United Kingdom", "Canada", "India", "Australia", 
+  "United States", "United Kingdom", "Canada", "India", "Australia",
   "Pakistan", "Bangladesh", "Indonesia", "Brazil", "China", "Turkey", "Philippines"
 ];
 
 const categoriesData = {
   "Websites, IT & Software": [
-    "Website Design", "Web Development", "Mobile Apps", "Software Development", 
+    "Website Design", "Web Development", "Mobile Apps", "Software Development",
     "Game Development", "Database Administration", "DevOps & Cloud", "Cybersecurity"
   ],
   "Writing & Content": [
-    "Content Writing", "Copywriting", "Technical Writing", "Creative Writing", 
+    "Content Writing", "Copywriting", "Technical Writing", "Creative Writing",
     "Proofreading", "Translation", "Ghostwriting", "Blog Writing"
   ],
   "Design, Media & Architecture": [
-    "Graphic Design", "Logo Design", "UI/UX Design", "Video Editing", 
+    "Graphic Design", "Logo Design", "UI/UX Design", "Video Editing",
     "Animation", "Architecture", "Interior Design", "3D Modeling"
   ],
   "Data Entry & Admin": [
-    "Data Entry", "Virtual Assistant", "Web Research", "Lead Generation", 
+    "Data Entry", "Virtual Assistant", "Web Research", "Lead Generation",
     "CRM Management", "Email Management", "Document Conversion", "Typing"
   ]
 };
@@ -49,7 +50,7 @@ const findWorkNavigation = [
   },
   {
     id: 'language',
-    title: 'By language', 
+    title: 'By language',
     description: 'Find projects that are in your language.',
     icon: <Globe className="h-5 w-5" />
   },
@@ -150,9 +151,8 @@ const FindWorkMegaMenu: React.FC<{ activeSection: string; setActiveSection: (sec
             <button
               key={item.id}
               onClick={() => setActiveSection(item.id)}
-              className={`w-full text-left p-3 rounded transition-colors ${
-                activeSection === item.id ? 'bg-blue-600' : 'hover:bg-gray-700'
-              }`}
+              className={`w-full text-left p-3 rounded transition-colors ${activeSection === item.id ? 'bg-blue-600' : 'hover:bg-gray-700'
+                }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -190,12 +190,12 @@ const FindWorkMegaMenu: React.FC<{ activeSection: string; setActiveSection: (sec
 
 const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose, type }) => {
   const [activeWorkSection, setActiveWorkSection] = useState('skill');
-  
+
   if (!isOpen) return null;
 
   if (type === 'hire') {
     return (
-      <div 
+      <div
         className="absolute top-full left-0 right-0 bg-white border-t shadow-lg z-50 max-w-none"
         onMouseLeave={onClose}
         style={{ left: '50%', transform: 'translateX(-50%)', width: 'min(100vw, 1200px)' }}
@@ -255,7 +255,7 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose, type }) => {
 
   if (type === 'work') {
     return (
-      <div 
+      <div
         className="absolute top-full left-0 right-0 bg-white border-t shadow-lg z-50 max-w-none overflow-x-hidden"
         onMouseLeave={onClose}
         style={{ left: '50%', transform: 'translateX(-50%)', width: 'min(100vw, 1200px)' }}
@@ -268,9 +268,8 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose, type }) => {
                   <button
                     key={item.id}
                     onClick={() => setActiveWorkSection(item.id)}
-                    className={`w-full text-left p-3 rounded transition-colors ${
-                      activeWorkSection === item.id ? 'bg-blue-600' : 'hover:bg-gray-700'
-                    }`}
+                    className={`w-full text-left p-3 rounded transition-colors ${activeWorkSection === item.id ? 'bg-blue-600' : 'hover:bg-gray-700'
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -336,7 +335,7 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose, type }) => {
 
   if (type === 'solutions') {
     return (
-      <div 
+      <div
         className="absolute top-full left-0 right-0 bg-gradient-to-b from-slate-800 to-slate-900 border-t border-slate-600/30 shadow-xl z-50 max-w-none overflow-x-hidden"
         onMouseLeave={onClose}
         style={{ left: '50%', transform: 'translateX(-50%)', width: 'min(100vw, 1200px)' }}
@@ -385,6 +384,7 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose, type }) => {
 };
 
 export default function Header({ className }: { className?: string }) {
+  const router = useRouter();
   const [activeMegaMenu, setActiveMegaMenu] = useState<'hire' | 'work' | 'solutions' | null>(null);
 
   return (
@@ -395,9 +395,9 @@ export default function Header({ className }: { className?: string }) {
             <Logo asLink={false} />
           </Link>
         </div>
-        
+
         <nav className="flex items-center h-full space-x-1">
-          <div 
+          <div
             className="relative h-full"
             onMouseEnter={() => setActiveMegaMenu('hire')}
             onMouseLeave={() => setActiveMegaMenu(null)}
@@ -407,37 +407,37 @@ export default function Header({ className }: { className?: string }) {
               <ChevronDown className="ml-1 h-3 w-3" />
             </Button>
             {activeMegaMenu === 'hire' && (
-              <MegaMenu 
-                isOpen={true} 
-                onClose={() => setActiveMegaMenu(null)} 
-                type="hire" 
+              <MegaMenu
+                isOpen={true}
+                onClose={() => setActiveMegaMenu(null)}
+                type="hire"
               />
             )}
           </div>
-          
-          <div 
+
+          <div
             className="relative h-full"
             onMouseEnter={() => setActiveMegaMenu('work')}
             onMouseLeave={() => setActiveMegaMenu(null)}
           >
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="h-full rounded-none px-4"
-              onClick={() => window.location.href = '/find-jobs'}
+              onClick={() => router.push('/find-jobs')}
             >
               Find Work
               <ChevronDown className="ml-1 h-3 w-3" />
             </Button>
             {activeMegaMenu === 'work' && (
-              <MegaMenu 
-                isOpen={true} 
-                onClose={() => setActiveMegaMenu(null)} 
-                type="work" 
+              <MegaMenu
+                isOpen={true}
+                onClose={() => setActiveMegaMenu(null)}
+                type="work"
               />
             )}
           </div>
-          
-          <div 
+
+          <div
             className="relative h-full"
             onMouseEnter={() => setActiveMegaMenu('solutions')}
             onMouseLeave={() => setActiveMegaMenu(null)}
@@ -447,15 +447,15 @@ export default function Header({ className }: { className?: string }) {
               <ChevronDown className="ml-1 h-3 w-3" />
             </Button>
             {activeMegaMenu === 'solutions' && (
-              <MegaMenu 
-                isOpen={true} 
-                onClose={() => setActiveMegaMenu(null)} 
-                type="solutions" 
+              <MegaMenu
+                isOpen={true}
+                onClose={() => setActiveMegaMenu(null)}
+                type="solutions"
               />
             )}
           </div>
         </nav>
-        
+
         <div className="flex flex-1 items-center justify-end space-x-2">
           <Button asChild variant="ghost">
             <Link href="/login">Log In</Link>
@@ -463,9 +463,7 @@ export default function Header({ className }: { className?: string }) {
           <Button asChild variant="ghost">
             <Link href="/signup">Sign Up</Link>
           </Button>
-          <Button asChild className="bg-blue-600 hover:bg-blue-700">
-            <Link href="/post-project">Post a Project</Link>
-          </Button>
+
         </div>
       </div>
     </header>

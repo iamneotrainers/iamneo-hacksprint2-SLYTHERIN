@@ -11,20 +11,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  Upload, 
-  FileText, 
-  DollarSign, 
-  Calendar, 
-  User, 
-  Building, 
+import {
+  ArrowLeft,
+  ArrowRight,
+  Upload,
+  FileText,
+  DollarSign,
+  Calendar,
+  User,
+  Building,
   AlertTriangle,
   CheckCircle,
   Bot,
   Scale,
-  Clock
+  Clock,
+  Brain,
+  ThumbsUp,
+  ThumbsDown,
+  Check,
+  ChevronRight
 } from 'lucide-react';
 import { DisputeLayout } from '@/components/disputes/dispute-layout';
 
@@ -55,8 +60,16 @@ export default function NewDisputePage() {
     description: '',
     attachments: []
   });
-  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [aiAnalysis, setAiAnalysis] = useState<{
+    riskScore: number;
+    likelyFault: string;
+    faultPercentage: number;
+    explanation: string;
+    verdict: 'freelancer' | 'client' | 'partial';
+    confidence: string;
+  } | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [userDecision, setUserDecision] = useState<'accept' | 'appeal' | null>(null);
 
   const totalSteps = 6;
   const progress = (currentStep / totalSteps) * 100;
@@ -76,11 +89,15 @@ export default function NewDisputePage() {
   const runAIAnalysis = async () => {
     setIsAnalyzing(true);
     setTimeout(() => {
+      const isFreelancer = form.role === 'freelancer';
       const analysis = {
-        riskScore: Math.floor(Math.random() * 100),
-        likelyFault: form.role === 'freelancer' ? 'client' : 'freelancer',
-        faultPercentage: Math.floor(Math.random() * 40) + 30,
-        suggestedResolution: 'Partial payment release',
+        riskScore: Math.floor(Math.random() * 30) + 10,
+        likelyFault: isFreelancer ? 'client' : 'freelancer',
+        faultPercentage: 85,
+        explanation: isFreelancer
+          ? "Our AI analyzed the project timeline and communication logs. The freelancer submitted all deliverables 2 days before the deadline. The client viewed the files but did not respond or release the milestone funds for 10 days despite multiple follow-ups."
+          : "Evidence review indicates that the freelancer provided designs missing the requested 'Dark Mode' variation specified in the contract requirements (Section 3.2). This constitutes a breach of the agreed-upon deliverables.",
+        verdict: (isFreelancer ? 'client' : 'freelancer') as 'client' | 'freelancer',
         confidence: 'High',
         similarCases: 15,
         estimatedResolution: '3-5 business days'
@@ -121,9 +138,9 @@ export default function NewDisputePage() {
                   <h2 className="text-2xl font-semibold text-gray-900 mb-2">Who is raising this dispute?</h2>
                   <p className="text-gray-600">Select your role in this dispute</p>
                 </div>
-                
-                <RadioGroup 
-                  value={form.role} 
+
+                <RadioGroup
+                  value={form.role}
                   onValueChange={(value) => setForm(prev => ({ ...prev, role: value }))}
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -137,7 +154,7 @@ export default function NewDisputePage() {
                         </div>
                       </Label>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50">
                       <RadioGroupItem value="client" id="client" />
                       <Label htmlFor="client" className="flex items-center gap-3 cursor-pointer">
@@ -159,20 +176,18 @@ export default function NewDisputePage() {
                   <h2 className="text-2xl font-semibold text-gray-900 mb-2">Select Dispute Type</h2>
                   <p className="text-gray-600">Choose the category that best describes your issue</p>
                 </div>
-                
+
                 <div className="space-y-3">
                   {(form.role === 'freelancer' ? freelancerDisputeTypes : clientDisputeTypes).map((type) => (
-                    <div 
+                    <div
                       key={type.value}
-                      className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 ${
-                        form.disputeType === type.value ? 'border-blue-500 bg-blue-50' : ''
-                      }`}
+                      className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 ${form.disputeType === type.value ? 'border-blue-500 bg-blue-50' : ''
+                        }`}
                       onClick={() => setForm(prev => ({ ...prev, disputeType: type.value }))}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`w-4 h-4 rounded-full border-2 ${
-                          form.disputeType === type.value ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
-                        }`}>
+                        <div className={`w-4 h-4 rounded-full border-2 ${form.disputeType === type.value ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                          }`}>
                           {form.disputeType === type.value && (
                             <CheckCircle className="h-4 w-4 text-white" />
                           )}
@@ -193,7 +208,7 @@ export default function NewDisputePage() {
                   <h2 className="text-2xl font-semibold text-gray-900 mb-2">Select Project & Milestone</h2>
                   <p className="text-gray-600">Choose the project and specific milestone related to this dispute</p>
                 </div>
-                
+
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="project">Project</Label>
@@ -208,7 +223,7 @@ export default function NewDisputePage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   {form.projectId && (
                     <div>
                       <Label htmlFor="milestone">Milestone</Label>
@@ -234,7 +249,7 @@ export default function NewDisputePage() {
                   <h2 className="text-2xl font-semibold text-gray-900 mb-2">Explain the Issue</h2>
                   <p className="text-gray-600">Provide detailed description and supporting evidence</p>
                 </div>
-                
+
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="description">Detailed Description *</Label>
@@ -246,7 +261,7 @@ export default function NewDisputePage() {
                       className="min-h-32"
                     />
                   </div>
-                  
+
                   <div>
                     <Label>Attachments</Label>
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
@@ -269,7 +284,7 @@ export default function NewDisputePage() {
                   <h2 className="text-2xl font-semibold text-gray-900 mb-2">AI Pre-Analysis</h2>
                   <p className="text-gray-600">Our AI will analyze your case before human expert review</p>
                 </div>
-                
+
                 {!aiAnalysis && !isAnalyzing && (
                   <div className="text-center py-8">
                     <Bot className="h-16 w-16 text-blue-600 mx-auto mb-4" />
@@ -283,7 +298,7 @@ export default function NewDisputePage() {
                     </Button>
                   </div>
                 )}
-                
+
                 {isAnalyzing && (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -293,39 +308,88 @@ export default function NewDisputePage() {
                     </p>
                   </div>
                 )}
-                
+
                 {aiAnalysis && (
-                  <div className="space-y-4">
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        <h3 className="font-medium text-green-900">Analysis Complete</h3>
+                  <div className="space-y-6">
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Brain className="h-5 w-5 text-purple-600" />
+                        <h3 className="font-semibold text-purple-900">AI Analysis Summary</h3>
                       </div>
-                      <p className="text-sm text-green-700">
-                        AI has successfully analyzed your case with {aiAnalysis.confidence.toLowerCase()} confidence
+                      <p className="text-sm text-purple-800 leading-relaxed italic">
+                        "{aiAnalysis.explanation}"
                       </p>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-600">Risk Score</span>
-                            <Badge variant={aiAnalysis.riskScore > 70 ? 'destructive' : aiAnalysis.riskScore > 40 ? 'default' : 'secondary'}>
-                              {aiAnalysis.riskScore}/100
-                            </Badge>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-sm font-medium text-gray-600 mb-2">Likely Fault</div>
-                          <div className="text-lg font-semibold text-gray-900 capitalize">
-                            {aiAnalysis.likelyFault} ({aiAnalysis.faultPercentage}%)
-                          </div>
-                        </CardContent>
-                      </Card>
+                      {/* Freelancer Box */}
+                      <div className={`p-4 rounded-xl border-2 flex items-start gap-3 ${aiAnalysis.verdict === 'client' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                        }`}>
+                        <div className={`p-2 rounded-full ${aiAnalysis.verdict === 'client' ? 'bg-green-100' : 'bg-red-100'
+                          }`}>
+                          {aiAnalysis.verdict === 'client' ? <ThumbsUp className="h-4 w-4 text-green-700" /> : <ThumbsDown className="h-4 w-4 text-red-700" />}
+                        </div>
+                        <div>
+                          <p className={`font-bold text-sm ${aiAnalysis.verdict === 'client' ? 'text-green-800' : 'text-red-800'
+                            }`}>
+                            FREELANCER: {aiAnalysis.verdict === 'client' ? 'CORRECT' : 'WRONG'}
+                          </p>
+                          <p className="text-[11px] text-gray-600 mt-1 uppercase tracking-tight font-medium">
+                            {aiAnalysis.verdict === 'client' ? 'High evidence of compliance' : 'Low evidence of compliance'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Client Box */}
+                      <div className={`p-4 rounded-xl border-2 flex items-start gap-3 ${aiAnalysis.verdict === 'freelancer' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                        }`}>
+                        <div className={`p-2 rounded-full ${aiAnalysis.verdict === 'freelancer' ? 'bg-green-100' : 'bg-red-100'
+                          }`}>
+                          {aiAnalysis.verdict === 'freelancer' ? <ThumbsUp className="h-4 w-4 text-green-700" /> : <ThumbsDown className="h-4 w-4 text-red-700" />}
+                        </div>
+                        <div>
+                          <p className={`font-bold text-sm ${aiAnalysis.verdict === 'freelancer' ? 'text-green-800' : 'text-red-800'
+                            }`}>
+                            CLIENT: {aiAnalysis.verdict === 'freelancer' ? 'CORRECT' : 'WRONG'}
+                          </p>
+                          <p className="text-[11px] text-gray-600 mt-1 uppercase tracking-tight font-medium">
+                            {aiAnalysis.verdict === 'freelancer' ? 'High evidence of compliance' : 'Low evidence of compliance'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 text-center">
+                      <h3 className="font-bold text-lg mb-2">Final Decision for Step 5</h3>
+                      <p className="text-sm text-gray-600 mb-6 font-medium">
+                        Are you accepting this solution by the AI or appealing for the higher level admins to analyze?
+                      </p>
+
+                      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <Button
+                          variant={userDecision === 'accept' ? 'default' : 'outline'}
+                          className={`px-8 h-12 ${userDecision === 'accept' ? 'bg-green-600 hover:bg-green-700' : 'border-green-200 text-green-700 hover:bg-green-50'}`}
+                          onClick={() => setUserDecision('accept')}
+                        >
+                          {userDecision === 'accept' ? <Check className="h-4 w-4 mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                          Accept Solution
+                        </Button>
+                        <Button
+                          variant={userDecision === 'appeal' ? 'destructive' : 'outline'}
+                          className={`px-8 h-12 ${userDecision === 'appeal' ? '' : 'border-red-200 text-red-700 hover:bg-red-50'}`}
+                          onClick={() => setUserDecision('appeal')}
+                        >
+                          <Scale className="h-4 w-4 mr-2" />
+                          Appeal (Higher Level)
+                        </Button>
+                      </div>
+
+                      {userDecision === 'appeal' && (
+                        <p className="text-xs text-red-600 mt-4 flex items-center justify-center gap-1 font-medium italic">
+                          <AlertTriangle className="h-3 w-3" />
+                          Case will be sent to the Resolution Gigs Dashboard for manual review.
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -338,7 +402,7 @@ export default function NewDisputePage() {
                   <h2 className="text-2xl font-semibold text-gray-900 mb-2">Submit Dispute</h2>
                   <p className="text-gray-600">Review your dispute details and submit for expert review</p>
                 </div>
-                
+
                 <Card className="bg-gray-50">
                   <CardContent className="p-4">
                     <h4 className="font-medium text-gray-900 mb-3">Dispute Summary</h4>
@@ -351,17 +415,23 @@ export default function NewDisputePage() {
                         <span className="font-medium text-gray-600">Type:</span>
                         <span className="ml-2">{form.disputeType.replace('_', ' ')}</span>
                       </div>
+                      <div className="col-span-2 mt-2 pt-2 border-t">
+                        <span className="font-medium text-gray-600">AI Path Decision:</span>
+                        <Badge variant={userDecision === 'accept' ? 'success' : 'destructive'} className="ml-2">
+                          {userDecision === 'accept' ? 'ACCEPTED AI SOLUTION' : 'APPEALED (ADMIN REVIEW)'}
+                        </Badge>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
                     <div>
                       <h4 className="font-medium text-yellow-900 mb-1">Legal Disclaimer</h4>
                       <p className="text-sm text-yellow-700">
-                        By submitting this dispute, you agree to our dispute resolution process and acknowledge that 
+                        By submitting this dispute, you agree to our dispute resolution process and acknowledge that
                         all information provided is accurate. False claims may result in account penalties.
                       </p>
                     </div>
@@ -371,25 +441,25 @@ export default function NewDisputePage() {
             )}
 
             <div className="flex items-center justify-between mt-8 pt-6 border-t">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={handlePrevious}
                 disabled={currentStep === 1}
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Previous
               </Button>
-              
+
               <div className="flex items-center gap-2">
                 {currentStep < totalSteps ? (
-                  <Button 
+                  <Button
                     onClick={handleNext}
                     disabled={
                       (currentStep === 1 && !form.role) ||
                       (currentStep === 2 && !form.disputeType) ||
                       (currentStep === 3 && (!form.projectId || !form.milestoneId)) ||
                       (currentStep === 4 && !form.description.trim()) ||
-                      (currentStep === 5 && !aiAnalysis)
+                      (currentStep === 5 && (!aiAnalysis || !userDecision))
                     }
                   >
                     Next

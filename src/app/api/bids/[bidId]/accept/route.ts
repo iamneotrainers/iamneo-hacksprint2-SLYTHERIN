@@ -54,12 +54,12 @@ export async function POST(
             .eq('project_id', proposal.project_id)
             .neq('id', bidId);
 
-        // 3. Update project status to assigned and set freelancer
+        // 3. Update project status to in_progress and set hired freelancer
         await supabase
             .from('projects')
             .update({
-                status: 'assigned',
-                freelancer_id: proposal.freelancer_id
+                status: 'in_progress',
+                hired_freelancer_id: proposal.freelancer_id
             })
             .eq('id', proposal.project_id);
 

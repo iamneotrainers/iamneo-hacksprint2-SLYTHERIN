@@ -4,20 +4,23 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
+import {
   Briefcase,
   User,
   DollarSign,
   Calendar,
   ArrowRight,
-  CheckCircle
+  CheckCircle,
+  MessageCircle
 } from "lucide-react";
+import { useChat } from '@/contexts/chat-context';
 
 interface ProjectPageProps {
   params: { id: string };
 }
 
 export default function ProjectPage({ params }: ProjectPageProps) {
+  const { openChat } = useChat();
   const [projectCreated, setProjectCreated] = useState(false);
 
   // Mock project data
@@ -101,7 +104,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                         <p className="font-semibold">${project.budget}</p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-3">
                       <Calendar className="h-5 w-5 text-blue-600" />
                       <div>
@@ -133,7 +136,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                 <CardTitle className="text-lg">Client</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 mb-3">
                   <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
                     <User className="h-6 w-6 text-gray-600" />
                   </div>
@@ -142,6 +145,18 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     <p className="text-sm text-gray-600">Project Owner</p>
                   </div>
                 </div>
+                <Button
+                  variant="outline"
+                  className="w-full border-blue-200 text-blue-600 hover:bg-blue-50"
+                  onClick={() => openChat(
+                    project.id,
+                    { id: 'client_1', name: project.client.name, role: 'client', status: 'online' },
+                    project.title
+                  )}
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Message Client
+                </Button>
               </CardContent>
             </Card>
 
@@ -173,15 +188,15 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                   <p className="text-sm text-gray-600">
                     Ready to create the project workspace and begin the escrow process?
                   </p>
-                  
-                  <Button 
+
+                  <Button
                     onClick={handleCreateProject}
                     className="w-full bg-blue-600 hover:bg-blue-700"
                   >
                     <ArrowRight className="h-4 w-4 mr-2" />
                     Create Project & Setup Workspace
                   </Button>
-                  
+
                   <p className="text-xs text-gray-500">
                     This will create the project workspace where escrow funding and milestone management will take place.
                   </p>
