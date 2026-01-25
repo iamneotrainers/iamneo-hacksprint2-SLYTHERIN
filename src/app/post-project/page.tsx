@@ -78,6 +78,7 @@ export default function PostProjectPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [skillInput, setSkillInput] = useState('');
+  const [loading, setLoading] = useState(false);
 
   if (!user) {
     redirect('/login');
@@ -150,8 +151,75 @@ export default function PostProjectPage() {
     setProjectData(prev => ({ ...prev, files: prev.files.filter((_, i) => i !== index) }));
   };
 
-  const submitProject = () => {
-    router.push('/dashboard?posted=true');
+  const submitProject = async () => {
+    try {
+      setLoading(true);
+
+      // Extract numeric values from budget range
+      let budget_min = 0;
+      let budget_max = 0;
+
+      switch (projectData.budgetRange) {
+        case 'under-500':
+          budget_min = 0;
+          budget_max = 500;
+          break;
+        case '500-1000':
+          budget_min = 500;
+          budget_max = 1000;
+          break;
+        case '1000-5000':
+          budget_min = 1000;
+          budget_max = 5000;
+          break;
+        case '5000-10000':
+          budget_min = 5000;
+          budget_max = 10000;
+          break;
+        case 'over-10000':
+          budget_min = 10000;
+          budget_max = 50000;
+          break;
+      }
+
+      const response = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: projectData.title,
+          description: projectData.description,
+          category: projectData.category,
+          subcategory: projectData.subcategory,
+          budget_type: projectData.budgetType,
+          budget_range: projectData.budgetRange,
+          budget_min,
+          budget_max,
+          duration: projectData.duration,
+          experience_level: projectData.experienceLevel,
+          skills: projectData.skills,
+          location_preference: projectData.location,
+          visibility: projectData.visibility,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(errorData.error || 'Failed to create project');
+      }
+
+      const data = await response.json();
+
+      // Redirect to My Projects page after successful creation
+      router.push('/my-projects?posted=true');
+    } catch (error: any) {
+      console.error('Error creating project:', error);
+      alert(`Failed to create project: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderStep = () => {
@@ -686,9 +754,13 @@ export default function PostProjectPage() {
 
                     {currentStep === totalSteps ? (
                       <div className="flex gap-3">
-                        <Button variant="outline">Save as Draft</Button>
-                        <Button onClick={submitProject} className="bg-blue-600 hover:bg-blue-700">
-                          Post Project
+                        <Button variant="outline" disabled={loading}>Save as Draft</Button>
+                        <Button
+                          onClick={submitProject}
+                          className="bg-blue-600 hover:bg-blue-700"
+                          disabled={loading}
+                        >
+                          {loading ? 'Posting...' : 'Post Project'}
                         </Button>
                       </div>
                     ) : (

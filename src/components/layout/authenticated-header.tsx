@@ -75,7 +75,7 @@ const secondaryNavItems = [
   { name: "Dashboard", href: "/dashboard", icon: <BarChart3 className="h-4 w-4" /> },
   { name: "Lists", href: "/lists", icon: <List className="h-4 w-4" /> },
   { name: "Tasklists", href: "/tasklists", icon: <CheckSquare className="h-4 w-4" /> },
-  { name: "My Projects", href: "/projects", icon: <Briefcase className="h-4 w-4" /> },
+  { name: "My Projects", href: "/my-projects", icon: <Briefcase className="h-4 w-4" /> },
   { name: "Services", href: "/services", icon: <FileText className="h-4 w-4" /> },
   { name: "Inbox", href: "/inbox", icon: <Inbox className="h-4 w-4" /> },
   { name: "Feedback", href: "/feedback", icon: <Star className="h-4 w-4" /> },
@@ -219,16 +219,24 @@ export default function AuthenticatedHeader() {
       <div className="border-b border-slate-700">
         <div className="w-full px-4">
           <div className="flex items-center justify-between h-16 gap-4">
-            {/* Left - Logo */}
-            <div className="flex items-center flex-shrink-0">
-              <Link href="/dashboard">
-                <Logo asLink={false} className="text-white" />
+            {/* Left Side - Navigation */}
+            <nav className="flex items-center space-x-1">
+              <Link href="/dashboard" className="hover:bg-slate-700 px-4 py-2 rounded-md text-sm font-medium transition-colors text-white">
+                Dashboard
               </Link>
-            </div>
-
-            {/* Center - Primary Navigation */}
-            <nav className="hidden md:flex items-center space-x-8">
-              {/* Browse Dropdown */}
+              <Link href="/dashboard/jobs" className="hover:bg-slate-700 px-4 py-2 rounded-md text-sm font-medium transition-colors text-white">
+                Jobs
+              </Link>
+              <Link href="/find-jobs" className="hover:bg-slate-700 px-4 py-2 rounded-md text-sm font-medium transition-colors text-white">
+                Browse
+              </Link>
+              <Link href="/contracts" className="hover:bg-slate-700 px-4 py-2 rounded-md text-sm font-medium transition-colors text-white">
+                Contracts
+              </Link>
+              <Link href="/resolution-gigs" className="hover:bg-slate-700 px-4 py-2 rounded-md text-sm font-medium transition-colors text-white flex items-center gap-1">
+                <Shield className="h-4 w-4" />
+                Resolution Gigs
+              </Link>
               <div className="relative" ref={browseDropdownRef}>
                 <Button
                   variant="ghost"
@@ -902,7 +910,7 @@ export default function AuthenticatedHeader() {
                   </div>
 
                   {profileDropdownOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 max-h-96 overflow-y-auto">
+                    <div className="absolute right-0 top-full mt-2 w-72 max-w-[95vw] bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 max-h-[calc(100vh-5rem)] overflow-y-auto overflow-x-hidden">
                       {/* Account Section */}
                       <div className="px-3 py-2">
                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Account</h3>

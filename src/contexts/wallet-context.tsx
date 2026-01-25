@@ -1,6 +1,8 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { ethers } from 'ethers';
+import { CONFIG } from '@/lib/config';
 
 interface User {
   id: string;
@@ -8,7 +10,8 @@ interface User {
   defaultRole: 'CLIENT' | 'FREELANCER';
   email?: string;
   name?: string;
-  balance?: string; // Balance in ETH/MATIC
+  balance?: string; // ETH Balance
+  tokenBalance?: string; // TRT Balance
 }
 
 interface Project {
@@ -120,20 +123,38 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return canActAsRole(projectId, role);
   };
 
+  const getTokenBalance = async (): Promise<string> => {
+    if (!user?.walletAddress || typeof window === 'undefined' || !window.ethereum) return '0.0';
+
+    try {
+      // Use ethers v6 BrowserProvider
+      const provider = new ethers.BrowserProvider(window.ethereum);
+
+      // Minimal ABI for balanceOf
+      const abi = [
+        "function balanceOf(address owner) view returns (uint256)"
+      ];
+
+      const contract = new ethers.Contract(CONFIG.TRUST_TOKEN_ADDRESS, abi, provider);
+      const balanceWei = await contract.balanceOf(user.walletAddress);
+      return ethers.formatUnits(balanceWei, 18); // Assuming 18 decimals
+    } catch (error) {
+      console.error('Error fetching token balance:', error);
+      return '0.0';
+    }
+  };
+
   const getBalance = async (): Promise<string> => {
     if (!user?.walletAddress) return '0.0';
 
     try {
       if (typeof window !== 'undefined' && window.ethereum) {
-        // Get balance in Wei
         const balanceWei = await window.ethereum.request({
           method: 'eth_getBalance',
           params: [user.walletAddress, 'latest']
         });
-
-        // Convert Wei to ETH/MATIC (1 ETH = 10^18 Wei)
         const balanceEth = parseInt(balanceWei, 16) / 1e18;
-        return balanceEth.toFixed(6);
+        return balanceEth.toFixed(4);
       }
       return '0.0';
     } catch (error) {
@@ -144,8 +165,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const refreshBalance = async () => {
     if (user) {
-      const balance = await getBalance();
-      setUser({ ...user, balance });
+      const [balance, tokenBalance] = await Promise.all([
+        getBalance(),
+        getTokenBalance()
+      ]);
+      setUser({ ...user, balance, tokenBalance });
     }
   };
 
@@ -157,7 +181,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         id: 'user_demo',
         walletAddress: savedWallet,
         defaultRole: 'CLIENT',
-        name: 'Demo User'
+        name: 'Demo User',
+        balance: '0.0',
+        tokenBalance: '0.0'
       };
       setUser(userData);
       setIsConnected(true);

@@ -1,350 +1,386 @@
-'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  Briefcase, 
-  Calendar, 
-  DollarSign, 
-  User, 
-  Eye, 
-  MessageCircle, 
+
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Briefcase,
   Clock,
-  CheckCircle,
+  DollarSign,
+  Users,
+  FileText,
+  TrendingUp,
   AlertCircle,
-  Plus,
-  Filter,
-  Search
-} from 'lucide-react';
+} from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 
-const projects = [
-  {
-    id: 1,
-    title: "E-commerce Website Development",
-    client: "TechCorp Inc.",
-    clientAvatar: "/api/placeholder/32/32",
-    budget: 2500,
-    currency: "USD",
-    status: "Active",
-    progress: 65,
-    deadline: "2024-02-15",
-    lastActivity: "2 hours ago",
-    description: "Complete e-commerce solution with payment integration and admin panel",
-    skills: ["React", "Node.js", "MongoDB"],
-    messages: 12,
-    milestones: { completed: 2, total: 4 }
-  },
-  {
-    id: 2,
-    title: "Mobile App UI/UX Design",
-    client: "StartupXYZ",
-    clientAvatar: "/api/placeholder/32/32",
-    budget: 4200,
-    currency: "USD",
-    status: "In Review",
-    progress: 90,
-    deadline: "2024-01-30",
-    lastActivity: "1 day ago",
-    description: "Modern mobile app design for iOS and Android platforms",
-    skills: ["Figma", "UI/UX", "Prototyping"],
-    messages: 8,
-    milestones: { completed: 3, total: 3 }
-  },
-  {
-    id: 3,
-    title: "Logo Design & Branding",
-    client: "Creative Agency",
-    clientAvatar: "/api/placeholder/32/32",
-    budget: 800,
-    currency: "USD",
-    status: "Completed",
-    progress: 100,
-    deadline: "2024-01-20",
-    lastActivity: "3 days ago",
-    description: "Complete brand identity package including logo, colors, and guidelines",
-    skills: ["Adobe Illustrator", "Branding", "Logo Design"],
-    messages: 15,
-    milestones: { completed: 2, total: 2 }
-  },
-  {
-    id: 4,
-    title: "WordPress Website Maintenance",
-    client: "Local Business",
-    clientAvatar: "/api/placeholder/32/32",
-    budget: 1200,
-    currency: "USD",
-    status: "On Hold",
-    progress: 25,
-    deadline: "2024-03-01",
-    lastActivity: "1 week ago",
-    description: "Monthly maintenance and updates for WordPress business website",
-    skills: ["WordPress", "PHP", "Maintenance"],
-    messages: 4,
-    milestones: { completed: 0, total: 3 }
-  }
-];
+interface Job {
+  id: string;
+  title: string;
+  description: string;
+  budget_min: number;
+  budget_max: number;
+  status: string;
+  client_id: string;
+  created_at: string;
+  category?: string;
+  skills?: string[];
+  _count?: {
+    proposals: number;
+  };
+}
+
+interface Bid {
+  id: string;
+  job_id: string;
+  amount: number;
+  proposal: string;
+  status: string;
+  created_at: string;
+  job?: {
+    id: string;
+    title: string;
+    description: string;
+    status: string;
+  };
+}
 
 export default function MyProjectsPage() {
-  const [selectedFilter, setSelectedFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
+  const { user } = useAuth();
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const tabParam = searchParams?.get('tab');
+  const [activeTab, setActiveTab] = useState(tabParam === 'freelancer' ? 'freelancer' : 'client');
+  const [postedJobs, setPostedJobs] = useState<Job[]>([]);
+  const [appliedBids, setAppliedBids] = useState<Bid[]>([]);
+  const [loadingPosted, setLoadingPosted] = useState(true);
+  const [loadingApplied, setLoadingApplied] = useState(true);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Active': return 'bg-green-100 text-green-800';
-      case 'Completed': return 'bg-blue-100 text-blue-800';
-      case 'In Review': return 'bg-yellow-100 text-yellow-800';
-      case 'On Hold': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+  useEffect(() => {
+    if (user?.id) {
+      fetchPostedJobs();
+      fetchAppliedBids();
+    }
+  }, [user?.id]);
+
+  const fetchPostedJobs = async () => {
+    try {
+      setLoadingPosted(true);
+      const response = await fetch(`/api/jobs?created_by=${user?.id}`);
+
+      if (!response.ok) {
+        console.error("Failed to fetch jobs:", response.statusText);
+        setPostedJobs([]);
+        return;
+      }
+
+      const data = await response.json();
+      // Ensure data is an array
+      setPostedJobs(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error fetching posted jobs:", error);
+      setPostedJobs([]);
+    } finally {
+      setLoadingPosted(false);
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'Active': return <Clock className="h-4 w-4" />;
-      case 'Completed': return <CheckCircle className="h-4 w-4" />;
-      case 'In Review': return <Eye className="h-4 w-4" />;
-      case 'On Hold': return <AlertCircle className="h-4 w-4" />;
-      default: return <Briefcase className="h-4 w-4" />;
+  const fetchAppliedBids = async () => {
+    try {
+      setLoadingApplied(true);
+      const response = await fetch(`/api/bids/my-bids?freelancer_id=${user?.id}`);
+
+      if (!response.ok) {
+        console.error("Failed to fetch bids:", response.statusText);
+        setAppliedBids([]);
+        return;
+      }
+
+      const data = await response.json();
+      // Ensure data is an array
+      setAppliedBids(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error fetching applied bids:", error);
+      setAppliedBids([]);
+    } finally {
+      setLoadingApplied(false);
     }
   };
-
-  const filteredProjects = projects.filter(project => {
-    const matchesFilter = selectedFilter === 'all' || project.status.toLowerCase().replace(' ', '-') === selectedFilter;
-    const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         project.client.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
-
-  const totalEarnings = projects
-    .filter(p => p.status === 'Completed')
-    .reduce((sum, project) => sum + project.budget, 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4 max-w-7xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Projects</h1>
-            <p className="text-gray-600 mt-2">Manage and track your active projects</p>
-          </div>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="h-4 w-4 mr-2" />
-            New Project
-          </Button>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Briefcase className="h-8 w-8 text-blue-500" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Projects</p>
-                  <p className="text-2xl font-bold text-gray-900">{projects.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Clock className="h-8 w-8 text-green-500" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Active</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {projects.filter(p => p.status === 'Active').length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <CheckCircle className="h-8 w-8 text-blue-500" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Completed</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {projects.filter(p => p.status === 'Completed').length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <DollarSign className="h-8 w-8 text-green-500" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Earnings</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    ${totalEarnings.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Filters and Search */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Filter:</span>
-          </div>
-          
-          <div className="flex flex-wrap gap-2">
-            {[
-              { key: 'all', label: 'All Projects' },
-              { key: 'active', label: 'Active' },
-              { key: 'completed', label: 'Completed' },
-              { key: 'in-review', label: 'In Review' },
-              { key: 'on-hold', label: 'On Hold' }
-            ].map((filter) => (
-              <button
-                key={filter.key}
-                onClick={() => setSelectedFilter(filter.key)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  selectedFilter === filter.key
-                    ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
-          
-          <div className="relative ml-auto">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search projects..."
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
-            />
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+                <Briefcase className="h-8 w-8 text-blue-600" />
+                My Projects
+              </h1>
+              <p className="text-gray-600">Manage projects you posted and jobs you applied to</p>
+            </div>
+            <Button onClick={() => router.push("/post-project")}>Post New Project</Button>
           </div>
         </div>
 
-        {/* Projects Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredProjects.map((project) => (
-            <Card key={project.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg mb-2">{project.title}</CardTitle>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={project.clientAvatar} />
-                        <AvatarFallback>{project.client.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <span>{project.client}</span>
-                    </div>
+        {/* View Toggle Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="client">
+              <Briefcase className="h-4 w-4 mr-2" />
+              Client View
+            </TabsTrigger>
+            <TabsTrigger value="freelancer">
+              <Users className="h-4 w-4 mr-2" />
+              Freelancer View
+            </TabsTrigger>
+          </TabsList>
+
+          {/* CLIENT VIEW - Projects You Posted */}
+          <TabsContent value="client" className="space-y-6">
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Total Posted</p>
+                    <p className="text-2xl font-bold text-blue-600">{postedJobs.length}</p>
                   </div>
-                  <Badge className={getStatusColor(project.status)}>
-                    {getStatusIcon(project.status)}
-                    <span className="ml-1">{project.status}</span>
-                  </Badge>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="space-y-4">
-                <p className="text-sm text-gray-600 line-clamp-2">
-                  {project.description}
-                </p>
-                
-                {/* Progress Bar */}
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">Progress</span>
-                    <span className="font-medium">{project.progress}%</span>
+                  <Briefcase className="h-8 w-8 text-blue-600" />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Open Projects</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {postedJobs.filter((j) => j.status === "open").length}
+                    </p>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all"
-                      style={{ width: `${project.progress}%` }}
-                    ></div>
+                  <TrendingUp className="h-8 w-8 text-green-600" />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Total Applications</p>
+                    <p className="text-2xl font-bold text-purple-600">
+                      {postedJobs.reduce((sum, j) => sum + (j._count?.proposals || 0), 0)}
+                    </p>
                   </div>
-                </div>
-                
-                {/* Project Details */}
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center text-gray-600">
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    {project.currency} {project.budget.toLocaleString()}
-                  </div>
-                  <div className="flex items-center text-gray-600">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    {new Date(project.deadline).toLocaleDateString()}
-                  </div>
-                  <div className="flex items-center text-gray-600">
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    {project.messages} messages
-                  </div>
-                  <div className="flex items-center text-gray-600">
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    {project.milestones.completed}/{project.milestones.total} milestones
-                  </div>
-                </div>
-                
-                {/* Skills */}
-                <div className="flex flex-wrap gap-2">
-                  {project.skills.map((skill) => (
-                    <Badge key={skill} variant="secondary" className="text-xs">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-                
-                {/* Actions */}
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <span className="text-xs text-gray-500">
-                    Last activity: {project.lastActivity}
-                  </span>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      <Eye className="h-4 w-4 mr-2" />
-                      View
+                  <FileText className="h-8 w-8 text-purple-600" />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Job List */}
+            <div className="space-y-4">
+              {loadingPosted ? (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <p className="text-gray-600">Loading your projects...</p>
+                  </CardContent>
+                </Card>
+              ) : postedJobs.length === 0 ? (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 mb-4">You haven't posted any projects yet</p>
+                    <Button onClick={() => router.push("/post-project")}>
+                      Post Your First Project
                     </Button>
-                    <Button variant="outline" size="sm">
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      Message
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                postedJobs.map((job) => (
+                  <Card key={job.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-xl mb-2">{job.title}</CardTitle>
+                          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                            <span className="flex items-center gap-1">
+                              <DollarSign className="h-4 w-4" />$
+                              {job.budget_min.toLocaleString()} - ${job.budget_max.toLocaleString()}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              {new Date(job.created_at).toLocaleDateString()}
+                            </span>
+                            {job._count && job._count.proposals > 0 && (
+                              <span className="flex items-center gap-1 text-blue-600 font-medium">
+                                <Users className="h-4 w-4" />
+                                {job._count.proposals} application{job._count.proposals !== 1 ? "s" : ""}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Badge variant={job.status === "open" ? "default" : "secondary"} className="text-sm">
+                          {job.status.toUpperCase()}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-700 mb-4 line-clamp-2">{job.description}</p>
 
-        {/* Empty State */}
-        {filteredProjects.length === 0 && (
-          <div className="text-center py-12">
-            <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No projects found</h3>
-            <p className="text-gray-600 mb-4">
-              {searchQuery 
-                ? `No projects match "${searchQuery}"`
-                : selectedFilter === 'all' 
-                  ? "You haven't started any projects yet." 
-                  : `No ${selectedFilter.replace('-', ' ')} projects found.`}
-            </p>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Start Your First Project
-            </Button>
-          </div>
-        )}
+                      {/* Skills */}
+                      {job.skills && job.skills.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {job.skills.map((skill) => (
+                            <Badge key={skill} variant="outline" className="text-xs">
+                              {skill}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between border-t pt-4">
+                        {job._count && job._count.proposals > 0 ? (
+                          <div className="flex items-center gap-2 text-sm text-green-600">
+                            <FileText className="h-4 w-4" />
+                            <span className="font-medium">{job._count.proposals} proposal{job._count.proposals !== 1 ? "s" : ""} received</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <AlertCircle className="h-4 w-4" />
+                            <span>No applications yet</span>
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => router.push(`/job/${job.id}`)}
+                          >
+                            {job._count && job._count.proposals > 0 ? "View Applications" : "View Details"}
+                          </Button>
+                          <Button onClick={() => router.push(`/job/${job.id}`)}>Manage</Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </TabsContent>
+
+          {/* FREELANCER VIEW - Jobs You Applied To */}
+          <TabsContent value="freelancer" className="space-y-6">
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Total Applications</p>
+                    <p className="text-2xl font-bold text-blue-600">{appliedBids.length}</p>
+                  </div>
+                  <FileText className="h-8 w-8 text-blue-600" />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Pending</p>
+                    <p className="text-2xl font-bold text-yellow-600">
+                      {appliedBids.filter((b) => b.status === "pending").length}
+                    </p>
+                  </div>
+                  <Clock className="h-8 w-8 text-yellow-600" />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Accepted</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {appliedBids.filter((b) => b.status === "accepted").length}
+                    </p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-green-600" />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Bid List */}
+            <div className="space-y-4">
+              {loadingApplied ? (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <p className="text-gray-600">Loading your applications...</p>
+                  </CardContent>
+                </Card>
+              ) : appliedBids.length === 0 ? (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 mb-4">You haven't applied to any projects yet</p>
+                    <Button onClick={() => router.push("/dashboard")}>Browse Projects</Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                appliedBids.map((bid) => (
+                  <Card key={bid.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-xl mb-2">{bid.job?.title || "Project"}</CardTitle>
+                          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                            <span className="flex items-center gap-1">
+                              <DollarSign className="h-4 w-4" />
+                              Your bid: ${bid.amount.toLocaleString()}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              Applied {new Date(bid.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <Badge
+                          variant={
+                            bid.status === "accepted"
+                              ? "default"
+                              : bid.status === "pending"
+                                ? "secondary"
+                                : "destructive"
+                          }
+                          className="text-sm"
+                        >
+                          {bid.status === 'pending' ? 'Waiting for approval' :
+                            bid.status === 'accepted' ? 'Accepted' :
+                              bid.status === 'rejected' ? 'Rejected' :
+                                bid.status}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-700 mb-4 line-clamp-2">{bid.proposal}</p>
+
+                      <div className="flex items-center justify-end gap-2 border-t pt-4">
+                        {bid.status === "ACCEPTED" ? (
+                          <Button onClick={() => router.push(`/escrow/${bid.job_id}`)}>
+                            View Escrow
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            onClick={() => router.push(`/job/${bid.job_id}`)}
+                          >
+                            View Project
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

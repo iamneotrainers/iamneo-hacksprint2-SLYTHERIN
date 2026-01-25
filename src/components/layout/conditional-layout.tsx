@@ -34,7 +34,15 @@ export default function ConditionalLayout({
     "/project-updates",
     "/bookmarks",
     "/prototyper",
-    "/disputes"
+    "/disputes",
+    "/my-projects",
+    "/my-applications",
+    "/job",
+    "/edit-profile",
+    "/find-jobs",
+    "/escrow",
+    "/resolution-gigs",
+    "/contracts"
   ].some(route => pathname.startsWith(route));
 
   useEffect(() => {

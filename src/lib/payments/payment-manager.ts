@@ -1,9 +1,12 @@
-export type ContractState = 
-  | 'CREATED' 
-  | 'FUNDED' 
-  | 'IN_PROGRESS' 
-  | 'DISPUTED' 
-  | 'COMPLETED' 
+import { ethers } from 'ethers';
+import { CONFIG } from '@/lib/config';
+
+export type ContractState =
+  | 'CREATED'
+  | 'FUNDED'
+  | 'IN_PROGRESS'
+  | 'DISPUTED'
+  | 'COMPLETED'
   | 'CANCELLED';
 
 export type PaymentMethod = 'BLOCKCHAIN_ESCROW' | 'PAYPAL_PLATFORM_MANAGED' | 'STRIPE';
@@ -43,9 +46,46 @@ export interface PaymentProvider {
 
 export class SmartContractEscrow implements PaymentProvider {
   async depositFunds(projectId: string, amount: number): Promise<boolean> {
-    // Smart contract interaction
-    console.log(`Depositing ${amount} ETH to contract for project ${projectId}`);
-    return true;
+    try {
+      if (typeof window === 'undefined' || !window.ethereum) {
+        throw new Error("No crypto wallet found");
+      }
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      // TRT Token Contract
+      const tokenContract = new ethers.Contract(
+        CONFIG.TRUST_TOKEN_ADDRESS,
+        [
+          "function transfer(address to, uint256 amount) returns (boolean)",
+          "function decimals() view returns (uint8)"
+        ],
+        signer
+      );
+
+      // Destination: Mock Escrow or Project Wallet
+      // In a real app, this would be the Escrow Smart Contract Address
+      const destinationAddress = '0x742d35Cc6634C0532925a3b8D404fddF4f780EAD';
+
+      // Amount to Wei
+      const decimals = 18; // Default
+      const amountWei = ethers.parseUnits(amount.toString(), decimals);
+
+      console.log(`Initiating Transfer of ${amount} TRT to ${destinationAddress}...`);
+
+      // Execute Transfer
+      const tx = await tokenContract.transfer(destinationAddress, amountWei);
+      console.log("Transaction sent:", tx.hash);
+
+      await tx.wait();
+      console.log("Transaction confirmed!");
+
+      return true;
+    } catch (error) {
+      console.error("Deposit failed:", error);
+      return false;
+    }
   }
 
   async submitMilestone(projectId: string, milestoneId: string): Promise<boolean> {
@@ -184,13 +224,13 @@ export class PaymentManager {
   }
 
   async canPerformAction(
-    projectId: string, 
-    userWallet: string, 
+    projectId: string,
+    userWallet: string,
     action: 'DEPOSIT' | 'SUBMIT' | 'APPROVE' | 'DISPUTE' | 'CANCEL'
   ): Promise<boolean> {
     // Role-based permission checking
     const project = await this.getProjectStatus(projectId, 'BLOCKCHAIN_ESCROW');
-    
+
     switch (action) {
       case 'DEPOSIT':
       case 'APPROVE':

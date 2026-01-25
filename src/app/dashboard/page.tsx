@@ -1,278 +1,249 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 import {
-  Heart,
-  MessageCircle,
-  Share2,
+  Briefcase,
+  Search,
+  DollarSign,
+  Clock,
+  MapPin,
+  TrendingUp,
   Users,
-  Bell,
-  Plus,
-  CheckCircle,
-  Star,
-  Wallet,
-  Crown,
-  MessageSquare,
-  X
 } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 
-const communityPosts = [
-  {
-    id: 1,
-    user: { name: "Sarah Chen", avatar: "/api/placeholder/40/40", verified: true },
-    group: "Web Development",
-    timestamp: "2 hours ago",
-    content: "Just completed a React project with Next.js 14! The new app router is amazing for performance. Anyone else working with the latest features?",
-    image: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=500&h=300&fit=crop",
-    likes: 24,
-    comments: 8,
-    shares: 3
-  },
-  {
-    id: 2,
-    user: { name: "Mike Rodriguez", avatar: "/api/placeholder/40/40", verified: false },
-    group: "Graphic Design",
-    timestamp: "4 hours ago",
-    content: "Looking for feedback on this logo design for a tech startup. What do you think about the color scheme and typography?",
-    image: "https://images.unsplash.com/photo-1626785774573-4b799315345d?w=500&h=300&fit=crop",
-    likes: 18,
-    comments: 12,
-    shares: 2
-  },
-  {
-    id: 3,
-    user: { name: "Priya Sharma", avatar: "/api/placeholder/40/40", verified: true },
-    group: "AI & Machine Learning",
-    timestamp: "6 hours ago",
-    content: "Has anyone worked with GPT-4 API for content generation? I'm building a tool for automated blog writing and would love to hear about your experiences.",
-    likes: 31,
-    comments: 15,
-    shares: 7
-  }
-];
+interface Job {
+  id: string;
+  title: string;
+  description: string;
+  budget_min: number;
+  budget_max: number;
+  status: string;
+  client_id: string;
+  created_at: string;
+  category?: string;
+  skills?: string[];
+  location?: string;
+  client?: {
+    username: string;
+    name: string;
+    rating: number;
+  };
+}
 
 export default function DashboardPage() {
-  const [showMessages, setShowMessages] = useState(false);
+  const { user } = useAuth();
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    fetchAllJobs();
+  }, []);
+
+  const fetchAllJobs = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/jobs?status=open"); // Changed status to lowercase
+      const data = await response.json();
+
+      // Filter out jobs created by current user (show only OTHER users' jobs)
+      const otherUsersJobs = user?.id
+        ? data.filter((job: Job) => job.client_id !== user.id) // Changed created_by to client_id
+        : data;
+
+      setJobs(otherUsersJobs);
+    } catch (error) {
+      console.error("Error fetching jobs:", error);
+      setJobs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredJobs = jobs.filter((job) =>
+    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="w-full px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Sidebar - Account Progress */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <h3 className="font-semibold">Complete Your Profile</h3>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span>Profile Completion</span>
-                    <span>75%</span>
-                  </div>
-                  <Progress value={75} className="h-2" />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Profile photo added</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Skills verified</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
-                    <span>Add portfolio items</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Browse Available Projects
+          </h1>
+          <p className="text-gray-600">
+            Find projects posted by clients looking for talented freelancers
+          </p>
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative max-w-2xl">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <Input
+              type="text"
+              placeholder="Search projects..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-12 text-base"
+            />
           </div>
+        </div>
 
-          {/* Center - Community Feed */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Post Creation */}
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Available Projects</p>
+                <p className="text-2xl font-bold text-blue-600">{jobs.length}</p>
+              </div>
+              <Briefcase className="h-8 w-8 text-blue-600" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">New This Week</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {jobs.filter(j => {
+                    const weekAgo = new Date();
+                    weekAgo.setDate(weekAgo.getDate() - 7);
+                    return new Date(j.created_at) > weekAgo;
+                  }).length}
+                </p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-green-600" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Active Clients</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {new Set(jobs.map(j => j.client_id)).size}
+                </p>
+              </div>
+              <Users className="h-8 w-8 text-purple-600" />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Job Listings */}
+        <div className="space-y-4">
+          {loading ? (
             <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarImage src="/api/placeholder/40/40" />
-                    <AvatarFallback>JD</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <Button variant="outline" className="w-full justify-start text-gray-500">
-                      What's on your mind, John?
-                    </Button>
-                  </div>
-                </div>
+              <CardContent className="p-12 text-center">
+                <p className="text-gray-600">Loading available projects...</p>
               </CardContent>
             </Card>
-
-            {/* Community Posts */}
-            {communityPosts.map((post) => (
-              <Card key={post.id}>
-                <CardContent className="p-6">
-                  {/* Post Header */}
-                  <div className="flex items-center gap-3 mb-4">
-                    <Avatar>
-                      <AvatarImage src={post.user.avatar} />
-                      <AvatarFallback>{post.user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                    </Avatar>
+          ) : filteredJobs.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-2">
+                  {searchTerm ? "No projects match your search" : "No projects available at the moment"}
+                </p>
+                <p className="text-sm text-gray-500">
+                  Check back later for new opportunities
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            filteredJobs.map((job) => (
+              <Card key={job.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold">{post.user.name}</span>
-                        {post.user.verified && <CheckCircle className="h-4 w-4 text-blue-500" />}
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <span>in Community</span>
-                        <span>•</span>
-                        <span>{post.timestamp}</span>
+                      <Link
+                        href={`/job/${job.id}`}
+                        className="hover:text-blue-600 transition-colors"
+                      >
+                        <CardTitle className="text-xl mb-2">{job.title}</CardTitle>
+                      </Link>
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="h-4 w-4" />
+                          ${job.budget_min.toLocaleString()} - ${job.budget_max.toLocaleString()}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          {new Date(job.created_at).toLocaleDateString()}
+                        </span>
+                        {job.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-4 w-4" />
+                            {job.location}
+                          </span>
+                        )}
                       </div>
                     </div>
+                    <Badge variant="default" className="text-sm">
+                      {job.status}
+                    </Badge>
                   </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-700 mb-4 line-clamp-3">
+                    {job.description}
+                  </p>
 
-                  {/* Post Content */}
-                  <p className="text-gray-800 mb-4">{post.content}</p>
-
-                  {/* Post Image */}
-                  {post.image && (
-                    <div className="mb-4">
-                      <Image
-                        src={post.image}
-                        alt="Post image"
-                        width={500}
-                        height={300}
-                        className="rounded-lg w-full object-cover"
-                      />
+                  {/* Skills */}
+                  {job.skills && job.skills.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {job.skills.map((skill, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {skill}
+                        </Badge>
+                      ))}
                     </div>
                   )}
 
-                  {/* Post Actions */}
-                  <div className="flex items-center justify-between pt-4 border-t">
-                    <div className="flex items-center gap-6">
-                      <Button variant="ghost" size="sm" className="text-gray-600 hover:text-red-500">
-                        <Heart className="h-4 w-4 mr-2" />
-                        {post.likes}
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-500">
-                        <MessageCircle className="h-4 w-4 mr-2" />
-                        {post.comments}
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-gray-600 hover:text-green-500">
-                        <Share2 className="h-4 w-4 mr-2" />
-                        {post.shares}
-                      </Button>
+                  {/* Client Info */}
+                  {job.client && (
+                    <div className="flex items-center justify-between border-t pt-4">
+                      <div className="text-sm text-gray-600">
+                        Posted by{" "}
+                        <span className="font-medium text-gray-900">
+                          {job.client.name || job.client.username}
+                        </span>
+                        {job.client.rating > 0 && (
+                          <span className="ml-2 text-yellow-600">
+                            ⭐ {job.client.rating.toFixed(1)}
+                          </span>
+                        )}
+                      </div>
+                      <Link href={`/job/${job.id}`}>
+                        <Button>Apply Now</Button>
+                      </Link>
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
-            ))}
-          </div>
-
-          {/* Right Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Account Progress */}
-            <Card>
-              <CardHeader>
-                <h3 className="font-semibold">Complete Your Profile</h3>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span>Profile Completion</span>
-                    <span>75%</span>
-                  </div>
-                  <Progress value={75} className="h-2" />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Profile photo added</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Skills verified</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
-                    <span>Add portfolio items</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Account Info */}
-            <Card>
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Balance</span>
-                  <div className="flex items-center gap-1">
-                    <Wallet className="h-4 w-4 text-green-500" />
-                    <span className="font-semibold text-green-600">₹2,450</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Membership</span>
-                  <Badge className="bg-yellow-100 text-yellow-800">
-                    <Crown className="h-3 w-3 mr-1" />
-                    Plus
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Bids Remaining</span>
-                  <span className="font-semibold">45</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Promotional Card */}
-            <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-              <CardContent className="p-4">
-                <h4 className="font-semibold mb-2">0% Project Fees</h4>
-                <p className="text-sm text-blue-100 mb-3">
-                  Upgrade to Plus and pay zero fees on your next 5 projects
-                </p>
-                <Button size="sm" variant="secondary">
-                  Upgrade Now
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+            ))
+          )}
         </div>
-      </div>
 
-      {/* Floating Messages */}
-      <div className="fixed bottom-6 right-6 z-50">
-        {showMessages ? (
-          <Card className="w-80 h-96 shadow-xl">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <h3 className="font-semibold">Messages</h3>
-              <Button variant="ghost" size="sm" onClick={() => setShowMessages(false)}>
-                <X className="h-4 w-4" />
+        {/* Bottom CTA */}
+        {!loading && filteredJobs.length > 0 && (
+          <div className="mt-8 text-center">
+            <p className="text-gray-600 mb-4">
+              Want to post your own project?
+            </p>
+            <Link href="/post-project">
+              <Button size="lg">
+                Post a Project
               </Button>
-            </CardHeader>
-            <CardContent className="p-0 flex-1">
-              <div className="p-4 text-center text-gray-500">
-                <MessageSquare className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                <p className="text-sm">No new messages</p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Button
-            onClick={() => setShowMessages(true)}
-            className="rounded-full h-14 w-14 bg-blue-600 hover:bg-blue-700 shadow-lg"
-          >
-            <MessageSquare className="h-6 w-6" />
-          </Button>
+            </Link>
+          </div>
         )}
       </div>
     </div>

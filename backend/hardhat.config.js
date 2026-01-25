@@ -20,6 +20,12 @@ module.exports = {
       chainId: 80002,
       gasPrice: 35000000000 // 35 gwei
     },
+    // Ethereum Sepolia Testnet
+    sepolia: {
+      url: process.env.SEPOLIA_RPC || "https://rpc.sepolia.org",
+      accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
+      chainId: 11155111
+    },
     // Polygon Mainnet (Production)
     polygon: {
       url: process.env.POLYGON_RPC || "https://polygon-rpc.com",

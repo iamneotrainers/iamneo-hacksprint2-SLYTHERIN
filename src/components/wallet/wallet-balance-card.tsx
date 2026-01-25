@@ -41,7 +41,7 @@ export function WalletBalanceCard() {
                         {isConnected && user?.balance ? (
                             <>
                                 <div className="flex items-baseline gap-2">
-                                    <p className="text-4xl font-bold mt-2">{user.balance} MATIC</p>
+                                    <p className="text-4xl font-bold mt-2">{user.balance} ETH</p>
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -69,8 +69,8 @@ export function WalletBalanceCard() {
                         <Wallet className="h-16 w-16 text-blue-200 mb-4" />
                         {isConnected && (
                             <div className="text-sm text-blue-100">
-                                <p>Network: Polygon</p>
-                                <p className="text-xs mt-1">Amoy Testnet</p>
+                                <p>Network: Ethereum</p>
+                                <p className="text-xs mt-1">Sepolia Testnet</p>
                             </div>
                         )}
                     </div>

@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS proposals (
   cover_letter TEXT NOT NULL,
   proposed_budget DECIMAL(12, 2) NOT NULL,
   estimated_duration TEXT NOT NULL,
+  milestones JSONB DEFAULT '[]',
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected', 'withdrawn')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -309,6 +310,34 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER update_balance_on_transaction
   AFTER INSERT OR UPDATE ON transactions
   FOR EACH ROW EXECUTE FUNCTION update_user_balance();
+
+-- ============================================
+-- 14. CONTRACTS
+-- ============================================
+CREATE TABLE IF NOT EXISTS contracts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  proposal_id UUID NOT NULL REFERENCES proposals(id) ON DELETE CASCADE,
+  client_id UUID NOT NULL REFERENCES users(id),
+  freelancer_id UUID NOT NULL REFERENCES users(id),
+  total_amount DECIMAL(12, 2) NOT NULL,
+  locked_amount DECIMAL(12, 2) DEFAULT 0,
+  released_amount DECIMAL(12, 2) DEFAULT 0,
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'completed', 'disputed', 'cancelled', 'paused')),
+  start_date TIMESTAMPTZ DEFAULT NOW(),
+  end_date TIMESTAMPTZ,
+  milestones JSONB DEFAULT '[]',
+  smart_contract_address TEXT,
+  chain_id INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(project_id)
+);
+
+-- Update timestamp trigger
+CREATE TRIGGER update_contracts_updated_at
+  BEFORE UPDATE ON contracts
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- ============================================
 -- DEMO DATA
