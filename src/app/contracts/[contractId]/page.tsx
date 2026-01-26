@@ -85,6 +85,8 @@ interface Contract {
     project?: {
         title: string;
         description: string;
+        client_signature?: string;
+        created_at?: string;
     };
     client?: {
         id: string; // Ensure ID is available
@@ -915,23 +917,19 @@ export default function ContractDetailPage({ params }: { params: Promise<{ contr
                 isOpen={showSigningModal}
                 onClose={() => setShowSigningModal(false)}
                 onSign={handleFreelancerSign}
-                isOpen={showSigningModal}
-                onClose={() => setShowSigningModal(false)}
-                onSign={handleFreelancerSign}
                 userRole={isClient ? 'client' : 'freelancer'}
                 data={{
-                    data={{
                     clientName: contract.client?.name || 'Client',
-            clientWallet: contract.client?.wallet_address || '0x...',
-            freelancerName: contract.freelancer?.name || 'Freelancer',
-            freelancerWallet: contract.freelancer?.wallet_address || '0x...',
-            projectId: contract.id,
-            projectTitle: contract.project?.title || '',
-            projectDescription: contract.project?.description || '',
+                    clientWallet: contract.client?.wallet_address || '0x...',
+                    freelancerName: contract.freelancer?.name || 'Freelancer',
+                    freelancerWallet: contract.freelancer?.wallet_address || '0x...',
+                    projectId: contract.id,
+                    projectTitle: contract.project?.title || '',
+                    projectDescription: contract.project?.description || '',
                     milestones: contract.milestones.map(m => ({
-                title: m.title,
-            description: m.description,
-            tokens: Math.round(m.amount / 10) // 1 Token = ₹10
+                        title: m.title,
+                        description: m.description,
+                        tokens: Math.round(m.amount / 10) // 1 Token = ₹10
                     }))
                 }}
             />
