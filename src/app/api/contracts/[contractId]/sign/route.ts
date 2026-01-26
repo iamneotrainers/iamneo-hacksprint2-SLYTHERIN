@@ -23,15 +23,31 @@ export async function PATCH(
             return NextResponse.json({ error: 'Signature is required' }, { status: 400 });
         }
 
-        // Update contract with freelancer signature
+        // Check if user is party to contract
+        const { data: existingContract, error: fetchError } = await supabase
+            .from('contracts')
+            .select('*')
+            .eq('id', contractId)
+            .single();
+
+        if (fetchError || !existingContract) {
+            return NextResponse.json({ error: 'Contract not found' }, { status: 404 });
+        }
+
+        let updateData = {};
+        if (existingContract.freelancer_id === user.id) {
+            updateData = { freelancer_signature: signature, freelancer_signed_at: new Date().toISOString() };
+        } else if (existingContract.client_id === user.id) {
+            updateData = { client_signature: signature, client_signed_at: new Date().toISOString() };
+        } else {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
+
+        // Update contract with signature
         const { data: contract, error } = await supabase
             .from('contracts')
-            .update({
-                freelancer_signature: signature,
-                freelancer_signed_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', contractId)
-            .eq('freelancer_id', user.id) // Ensure only the freelancer can sign here
             .select()
             .single();
 

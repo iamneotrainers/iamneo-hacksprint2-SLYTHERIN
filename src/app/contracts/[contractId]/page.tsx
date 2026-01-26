@@ -102,6 +102,8 @@ interface Contract {
     };
     freelancer_signature?: string;
     freelancer_signed_at?: string;
+    client_signature?: string;
+    client_signed_at?: string;
     agreement_pdf_url?: string;
 }
 
@@ -913,24 +915,29 @@ export default function ContractDetailPage({ params }: { params: Promise<{ contr
                 isOpen={showSigningModal}
                 onClose={() => setShowSigningModal(false)}
                 onSign={handleFreelancerSign}
-                userRole="freelancer"
+                isOpen={showSigningModal}
+                onClose={() => setShowSigningModal(false)}
+                onSign={handleFreelancerSign}
+                userRole={isClient ? 'client' : 'freelancer'}
                 data={{
+                    data={{
                     clientName: contract.client?.name || 'Client',
-                    clientWallet: contract.client?.wallet_address || '0x...',
-                    freelancerName: contract.freelancer?.name || 'Freelancer',
-                    freelancerWallet: contract.freelancer?.wallet_address || '0x...',
-                    projectId: contract.id,
-                    projectTitle: contract.project?.title || '',
-                    projectDescription: contract.project?.description || '',
+            clientWallet: contract.client?.wallet_address || '0x...',
+            freelancerName: contract.freelancer?.name || 'Freelancer',
+            freelancerWallet: contract.freelancer?.wallet_address || '0x...',
+            projectId: contract.id,
+            projectTitle: contract.project?.title || '',
+            projectDescription: contract.project?.description || '',
                     milestones: contract.milestones.map(m => ({
-                        title: m.title,
-                        description: m.description,
-                        tokens: Math.round(m.amount / 10) // 1 Token = ₹10
+                title: m.title,
+            description: m.description,
+            tokens: Math.round(m.amount / 10) // 1 Token = ₹10
                     }))
                 }}
             />
 
-            {isFreelancer && !contract.freelancer_signature && (
+            {/* Sign Prompt for Freelancer OR Client */}
+            {((isFreelancer && !contract.freelancer_signature) || (isClient && !contract.client_signature)) && (
                 <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <Card className="max-w-md w-full border-none shadow-2xl rounded-[32px] overflow-hidden">
                         <div className="bg-blue-600 p-8 text-white text-center">
@@ -938,7 +945,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ contr
                                 <FileText className="h-8 w-8 text-white" />
                             </div>
                             <h2 className="text-2xl font-black mb-2 uppercase tracking-tight">Signature Required</h2>
-                            <p className="text-blue-100 text-sm font-bold">You must sign the Digital Service Agreement before starting work.</p>
+                            <p className="text-blue-100 text-sm font-bold">You must sign the Digital Service Agreement before proceeding.</p>
                         </div>
                         <CardContent className="p-8 space-y-4">
                             <div className="space-y-2">
