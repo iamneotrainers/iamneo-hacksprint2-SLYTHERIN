@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, FileText, Calendar, DollarSign, User, Eye, Edit, Trash2 } from 'lucide-react';
+import { Plus, FileText, Calendar, Coins, User, Eye, Edit, Trash2 } from 'lucide-react';
 
 const quotes = [
   {
@@ -12,7 +12,7 @@ const quotes = [
     title: "E-commerce Website Development",
     client: "TechCorp Inc.",
     amount: 2500,
-    currency: "USD",
+    currency: "SHM",
     status: "Pending",
     createdDate: "2024-01-15",
     validUntil: "2024-02-15",
@@ -23,7 +23,7 @@ const quotes = [
     title: "Mobile App UI/UX Design",
     client: "StartupXYZ",
     amount: 4200,
-    currency: "USD", 
+    currency: "SHM",
     status: "Accepted",
     createdDate: "2024-01-10",
     validUntil: "2024-02-10",
@@ -34,13 +34,15 @@ const quotes = [
     title: "Logo Design & Branding",
     client: "Creative Agency",
     amount: 800,
-    currency: "USD",
+    currency: "SHM",
     status: "Rejected",
     createdDate: "2024-01-05",
     validUntil: "2024-02-05",
     description: "Complete brand identity package"
   }
 ];
+
+
 
 export default function QuotesPage() {
   const [selectedTab, setSelectedTab] = useState('all');
@@ -87,21 +89,21 @@ export default function QuotesPage() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <DollarSign className="h-8 w-8 text-green-500" />
+                <Coins className="h-8 w-8 text-green-500" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Value</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    ${quotes.reduce((sum, quote) => sum + quote.amount, 0).toLocaleString()}
+                    {quotes.reduce((sum, quote) => sum + quote.amount, 0).toLocaleString()} SHM
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
@@ -115,7 +117,7 @@ export default function QuotesPage() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
@@ -138,11 +140,10 @@ export default function QuotesPage() {
               <button
                 key={tab}
                 onClick={() => setSelectedTab(tab)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm capitalize ${
-                  selectedTab === tab
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-2 px-1 border-b-2 font-medium text-sm capitalize ${selectedTab === tab
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
                 {tab} ({tab === 'all' ? quotes.length : quotes.filter(q => q.status.toLowerCase() === tab).length})
               </button>
@@ -163,25 +164,25 @@ export default function QuotesPage() {
                         {quote.status}
                       </Badge>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-3">
                       <div className="flex items-center">
                         <User className="h-4 w-4 mr-2" />
                         {quote.client}
                       </div>
                       <div className="flex items-center">
-                        <DollarSign className="h-4 w-4 mr-2" />
-                        {quote.currency} {quote.amount.toLocaleString()}
+                        <Coins className="h-4 w-4 mr-2" />
+                        {quote.amount.toLocaleString()} {quote.currency}
                       </div>
                       <div className="flex items-center">
                         <Calendar className="h-4 w-4 mr-2" />
                         Valid until {new Date(quote.validUntil).toLocaleDateString()}
                       </div>
                     </div>
-                    
+
                     <p className="text-gray-700">{quote.description}</p>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 ml-4">
                     <Button variant="outline" size="sm">
                       <Eye className="h-4 w-4 mr-2" />
@@ -206,8 +207,8 @@ export default function QuotesPage() {
             <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No quotes found</h3>
             <p className="text-gray-600 mb-4">
-              {selectedTab === 'all' 
-                ? "You haven't created any quotes yet." 
+              {selectedTab === 'all'
+                ? "You haven't created any quotes yet."
                 : `No ${selectedTab} quotes found.`}
             </p>
             <Button className="bg-blue-600 hover:bg-blue-700">

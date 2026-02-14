@@ -74,7 +74,10 @@ export async function POST(request: NextRequest) {
             budget_range,
             budget_min,
             budget_max,
+            budget_amount,
             duration,
+            start_date,
+            end_date,
             experience_level,
             skills,
             location_preference,
@@ -84,7 +87,8 @@ export async function POST(request: NextRequest) {
         } = body;
 
         // Validate required fields
-        if (!title || !description || !category || !budget_type || !budget_range || !duration || !experience_level) {
+        // Validate required fields - accept either duration OR start_date/end_date
+        if (!title || !description || !category || !budget_type || !experience_level) {
             return NextResponse.json(
                 { error: 'Missing required fields' },
                 { status: 400 }
@@ -92,27 +96,38 @@ export async function POST(request: NextRequest) {
         }
 
         // Create job (in projects table)
+        const projectData: any = {
+            title,
+            description,
+            category,
+            subcategory,
+            budget_type,
+            budget_range: budget_range || `${budget_amount}`,
+            budget_min: budget_min || budget_amount,
+            budget_max: budget_max || budget_amount,
+            experience_level,
+            skills,
+            location_preference,
+            visibility: visibility || 'public',
+            client_id: user.id,
+            client_signature,
+            client_signed_at,
+            status: 'open'
+        };
+
+        // Support both old duration field and new start_date/end_date fields
+        if (start_date && end_date) {
+            projectData.start_date = start_date;
+            projectData.end_date = end_date;
+            // Calculate duration as fallback for old schema
+            projectData.duration = `${start_date} to ${end_date}`;
+        } else if (duration) {
+            projectData.duration = duration;
+        }
+
         const { data: job, error } = await supabase
             .from('projects')
-            .insert({
-                title,
-                description,
-                category,
-                subcategory,
-                budget_type,
-                budget_range,
-                budget_min,
-                budget_max,
-                duration,
-                experience_level,
-                skills,
-                location_preference,
-                visibility: visibility || 'public',
-                client_id: user.id,
-                client_signature,
-                client_signed_at,
-                status: 'open'
-            })
+            .insert(projectData)
             .select()
             .single();
 

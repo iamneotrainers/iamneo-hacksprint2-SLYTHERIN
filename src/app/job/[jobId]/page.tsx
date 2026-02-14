@@ -19,9 +19,12 @@ import {
     AlertCircle,
     Plus,
     Minus,
+    Coins,
 } from "lucide-react";
 import { RiskAnalysisModal } from "@/components/RiskAnalysisModal";
 import { useAuth } from "@/contexts/auth-context";
+import { useWallet } from "@/contexts/wallet-context";
+import { TokenInput } from "@/components/ui/token-input";
 import { getUserRoleInJob, canApplyToJob } from "@/lib/roles";
 
 interface Job {
@@ -310,8 +313,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
                                 <CardTitle className="text-2xl mb-3">{job.title}</CardTitle>
                                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                                     <span className="flex items-center gap-1">
-                                        <DollarSign className="h-4 w-4" />
-                                        ${job.budget_min?.toLocaleString() || 0} - ${job.budget_max?.toLocaleString() || 0}
+                                        <Coins className="h-4 w-4" />
+                                        {job.budget_min?.toLocaleString() || 0} - {job.budget_max?.toLocaleString() || 0} SHM
                                     </span>
                                     <span className="flex items-center gap-1">
                                         <MapPin className="h-4 w-4" />
@@ -403,7 +406,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
                                                         </p>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="text-2xl font-bold text-green-600">${bid.amount.toLocaleString()}</p>
+                                                        <p className="text-2xl font-bold text-green-600">{bid.amount.toLocaleString()} SHM</p>
                                                         <p className="text-sm text-gray-600">
                                                             {new Date(bid.created_at).toLocaleDateString()}
                                                         </p>
@@ -419,7 +422,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
                                                             {bid.milestones.map((milestone, idx) => (
                                                                 <div key={idx} className="flex justify-between text-sm border-l-2 border-blue-500 pl-3">
                                                                     <span>{milestone.title}</span>
-                                                                    <span className="font-semibold">${milestone.amount}</span>
+                                                                    <span className="font-semibold">{milestone.amount} SHM</span>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -490,19 +493,19 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
                                     {/* Budget Reference */}
                                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                         <p className="text-sm text-blue-900">
-                                            <strong>Client's Budget:</strong> ${job.budget_min?.toLocaleString() || 0} - ${job.budget_max?.toLocaleString() || 0}
+                                            <strong>Client's Budget:</strong> {job.budget_min?.toLocaleString() || 0} - {job.budget_max?.toLocaleString() || 0} SHM
                                         </p>
                                     </div>
 
                                     {/* Bid Amount */}
                                     <div>
-                                        <Label htmlFor="amount">Your Bid Amount (USD)</Label>
-                                        <Input
+                                        <Label htmlFor="amount">Your Bid Amount (SHM)</Label>
+                                        <TokenInput
                                             id="amount"
-                                            type="number"
                                             value={bidAmount}
                                             onChange={(e) => setBidAmount(e.target.value)}
                                             placeholder="Enter your total bid amount"
+                                            showBalance={false}
                                             required
                                         />
                                     </div>
@@ -570,9 +573,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
 
                                                         <div className="grid grid-cols-2 gap-3">
                                                             <div>
-                                                                <Label>Amount ($)</Label>
-                                                                <Input
-                                                                    type="number"
+                                                                <Label>Amount (SHM)</Label>
+                                                                <TokenInput
                                                                     value={milestone.amount}
                                                                     onChange={(e) => {
                                                                         const newMilestones = [...milestones];
@@ -580,6 +582,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
                                                                         setMilestones(newMilestones);
                                                                     }}
                                                                     placeholder="1000"
+                                                                    showBalance={false}
                                                                     required
                                                                 />
                                                             </div>
@@ -640,10 +643,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
                                                 : 'bg-red-50 text-red-800 border border-red-200'
                                                 }`}>
                                                 <p className="text-sm font-medium">
-                                                    Milestone Total: ${milestones.reduce((sum, m) => sum + (parseFloat(m.amount) || 0), 0).toLocaleString()}
+                                                    Milestone Total: {milestones.reduce((sum, m) => sum + (parseFloat(m.amount) || 0), 0).toLocaleString()} SHM
                                                     {milestones.reduce((sum, m) => sum + (parseFloat(m.amount) || 0), 0) === parseFloat(bidAmount)
                                                         ? ' ✓ Matches bid amount'
-                                                        : ` ✗ Must equal $${parseFloat(bidAmount).toLocaleString()}`
+                                                        : ` ✗ Must equal ${parseFloat(bidAmount).toLocaleString()} SHM`
                                                     }
                                                 </p>
                                             </div>

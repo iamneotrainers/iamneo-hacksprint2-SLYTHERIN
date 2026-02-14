@@ -231,7 +231,7 @@ export default function EditProfilePage() {
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="hourlyRate">Hourly Rate (USD)</Label>
+                                    <Label htmlFor="hourlyRate">Hourly Rate (SHM)</Label>
                                     <Input
                                         id="hourlyRate"
                                         name="hourlyRate"

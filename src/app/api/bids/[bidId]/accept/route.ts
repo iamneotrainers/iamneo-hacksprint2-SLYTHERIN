@@ -117,7 +117,25 @@ export async function POST(
             })
             .eq('id', proposal.project_id);
 
-        // 4. Create contract
+        // 4. Check if contract already exists for this project
+        const { data: existingContract, error: contractCheckError } = await supabase
+            .from('contracts')
+            .select('id')
+            .eq('project_id', proposal.project_id)
+            .maybeSingle();
+
+        if (contractCheckError) {
+            console.error('Error checking existing contract:', contractCheckError);
+            return NextResponse.json({ error: 'Failed to check existing contract' }, { status: 500 });
+        }
+
+        if (existingContract) {
+            return NextResponse.json({
+                error: 'A contract already exists for this project'
+            }, { status: 400 });
+        }
+
+        // 5. Create contract
         const { data: contract, error: contractError } = await supabase
             .from('contracts')
             .insert({

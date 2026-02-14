@@ -11,7 +11,9 @@ interface User {
   defaultRole: 'CLIENT' | 'FREELANCER';
   email?: string;
   name?: string;
-  balance?: string; // SHM Balance (Native)
+  balance?: string; // SHM Balance (Available)
+  lockedBalance?: string; // SHM Locked in Escrow
+  totalBalance?: string; // Total SHM (Available + Locked)
   tokenBalance?: string; // TRT Balance (Legacy/Optional)
 }
 
@@ -36,6 +38,7 @@ interface WalletContextType {
   canActAsRole: (projectId: string, role: 'CLIENT' | 'FREELANCER') => boolean;
   projects: Project[];
   getBalance: () => Promise<string>;
+  getLockedBalance: () => Promise<string>;
   refreshBalance: () => Promise<void>;
 }
 
@@ -122,11 +125,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           id: `user_${walletAddress.slice(-8)}`,
           walletAddress,
           defaultRole: 'FREELANCER',
-          name: 'John Doe'
+          name: 'John Doe',
+          balance: '0.0',
+          lockedBalance: '0.0',
+          totalBalance: '0.0',
+          tokenBalance: '0.0'
         };
-
-        setUser(userData);
-        setIsConnected(true);
 
         setUser(userData);
         setIsConnected(true);
@@ -144,10 +148,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           id: 'user_demo',
           walletAddress: mockWallet,
           defaultRole: 'CLIENT',
-          name: 'Demo User'
+          name: 'Demo User',
+          balance: '0.0',
+          lockedBalance: '0.0',
+          totalBalance: '0.0',
+          tokenBalance: '0.0'
         };
 
-        setUser(userData);
         setUser(userData);
         setIsConnected(true);
         localStorage.setItem('walletAddress', mockWallet);
@@ -187,32 +194,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   };
 
   const getTokenBalance = async (): Promise<string> => {
-    if (!user?.walletAddress || typeof window === 'undefined' || !window.ethereum) return '0.0';
+    // Deprecated or optional TRT token balance
+    return '0.0';
+  };
 
-    // Skip if address is not set or seems like a placeholder for Shardeum
-    if (!CONFIG.TRUST_TOKEN_ADDRESS || CONFIG.TRUST_TOKEN_ADDRESS === '0x0000000000000000000000000000000000000000') {
-      return '0.0';
-    }
-
-    try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-
-      const abi = [
-        "function balanceOf(address owner) view returns (uint256)"
-      ];
-
-      const contract = new ethers.Contract(CONFIG.TRUST_TOKEN_ADDRESS, abi, provider);
-
-      // Use a timeout or catch specific CALL_EXCEPTION
-      const balanceWei = await contract.balanceOf(user.walletAddress).catch(() => null);
-
-      if (balanceWei === null) return '0.0';
-
-      return ethers.formatUnits(balanceWei, 18);
-    } catch (error) {
-      // Silently handle RPC/Contract errors to avoid console noise
-      return '0.0';
-    }
+  const getLockedBalance = async (): Promise<string> => {
+    if (!user?.walletAddress) return '0.0';
+    // TODO: Implement actual contract call
+    // For now, return a mock value if we have a user
+    // In a real implementation this would call contract.getLockedBalance(user.walletAddress)
+    return '250.0';
   };
 
   const getBalance = async (): Promise<string> => {
@@ -237,13 +228,17 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       setIsSyncing(true);
       setNetworkError(null);
       try {
-        const [balance, tokenBalance] = await Promise.all([
+        const [balance, locked] = await Promise.all([
           getBalance(),
-          getTokenBalance()
+          getLockedBalance()
         ]);
-        // For Shardeum, native balance (SHM) is what we primarily care about.
-        // We'll map 'balance' to SHM.
-        setUser({ ...user, balance, tokenBalance });
+
+        // Calculate total
+        const balanceNum = parseFloat(balance) || 0;
+        const lockedNum = parseFloat(locked) || 0;
+        const total = (balanceNum + lockedNum).toFixed(4);
+
+        setUser({ ...user, balance, lockedBalance: locked, totalBalance: total });
       } catch (err: any) {
         if (err.code === -32002) {
           setNetworkError("RPC Rate Limited - retrying...");
@@ -266,6 +261,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         defaultRole: 'CLIENT',
         name: 'Demo User',
         balance: '0.0',
+        lockedBalance: '0.0',
+        totalBalance: '0.0',
         tokenBalance: '0.0'
       };
       setUser(userData);
@@ -321,6 +318,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       canActAsRole,
       projects,
       getBalance,
+      getLockedBalance,
       refreshBalance
     }}>
       {children}

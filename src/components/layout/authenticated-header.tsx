@@ -64,15 +64,18 @@ import { cn } from "@/lib/utils";
 import Logo from "@/components/logo";
 import { useAuth } from "@/contexts/auth-context";
 import { useWallet } from "@/contexts/wallet-context";
-import { createClient } from "@/lib/supabase/client";
-import { MembershipModal } from "@/components/dashboard/membership-modal";
-import { FundManagementModal } from "@/components/dashboard/fund-management-modal";
-import { AnalyticsModal } from "@/components/dashboard/analytics-modal";
-import { BidInsightsModal } from "@/components/dashboard/bid-insights-modal";
-import { FinancialDashboardModal } from "@/components/dashboard/financial-dashboard-modal";
-import { TransactionHistoryModal } from "@/components/dashboard/transaction-history-modal";
-import { SupportModal } from "@/components/dashboard/support-modal";
-import { PastFreelancersModal } from "@/components/dashboard/past-freelancers-modal";
+import { supabase } from "@/lib/supabase";
+import dynamic from 'next/dynamic';
+
+const MembershipModal = dynamic(() => import("@/components/dashboard/membership-modal").then(mod => mod.MembershipModal));
+const FundManagementModal = dynamic(() => import("@/components/dashboard/fund-management-modal").then(mod => mod.FundManagementModal));
+const AnalyticsModal = dynamic(() => import("@/components/dashboard/analytics-modal").then(mod => mod.AnalyticsModal));
+const BidInsightsModal = dynamic(() => import("@/components/dashboard/bid-insights-modal").then(mod => mod.BidInsightsModal));
+const FinancialDashboardModal = dynamic(() => import("@/components/dashboard/financial-dashboard-modal").then(mod => mod.FinancialDashboardModal));
+const TransactionHistoryModal = dynamic(() => import("@/components/dashboard/transaction-history-modal").then(mod => mod.TransactionHistoryModal));
+const SupportModal = dynamic(() => import("@/components/dashboard/support-modal").then(mod => mod.SupportModal));
+const PastFreelancersModal = dynamic(() => import("@/components/dashboard/past-freelancers-modal").then(mod => mod.PastFreelancersModal));
+import { WalletWidget } from "@/components/wallet/wallet-widget";
 
 interface Notification {
   id: string;
@@ -121,7 +124,7 @@ export default function AuthenticatedHeader() {
   const [searchQuery, setSearchQuery] = useState('');
   const { user, logout, isAuthenticated } = useAuth();
   const { user: walletUser, isConnected, connectWallet } = useWallet();
-  const supabase = createClient();
+
   const router = useRouter();
 
   // Defense in depth: Don't render if not authenticated
@@ -146,7 +149,6 @@ export default function AuthenticatedHeader() {
 
   const fetchNotifications = async () => {
     if (!user) return;
-    const supabase = createClient();
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
@@ -156,12 +158,11 @@ export default function AuthenticatedHeader() {
 
     if (data) {
       setNotifications(data);
-      setUnreadNotifications(data.filter(n => !n.read).length);
+      setUnreadNotifications(data.filter((n: Notification) => !n.read).length);
     }
   };
 
   const markAsRead = async (id: string) => {
-    const supabase = createClient();
     const { error } = await supabase
       .from('notifications')
       .update({ read: true })
@@ -177,7 +178,6 @@ export default function AuthenticatedHeader() {
 
   const markAllAsRead = async () => {
     if (!user) return;
-    const supabase = createClient();
     const { error } = await supabase
       .from('notifications')
       .update({ read: true })
@@ -194,7 +194,6 @@ export default function AuthenticatedHeader() {
     if (user) {
       fetchNotifications();
 
-      const supabase = createClient();
       const subscription = supabase
         .channel(`user_notifications_${user.id}`)
         .on(
@@ -205,7 +204,7 @@ export default function AuthenticatedHeader() {
             table: 'notifications',
             filter: `user_id=eq.${user.id}`
           },
-          (payload) => {
+          (payload: any) => {
             const newNotification = payload.new as Notification;
             setNotifications(prev => [newNotification, ...prev].slice(0, 10));
             setUnreadNotifications(prev => prev + 1);
@@ -301,16 +300,13 @@ export default function AuthenticatedHeader() {
         <div className="w-full px-4">
           <div className="flex items-center h-16 gap-4 relative">
             {/* Left Side - Navigation */}
-            <div className="flex-1 flex items-center">
+            <div className="flex items-center">
               <nav className="flex items-center space-x-1">
-                <Link href="/dashboard" className="hover:bg-slate-700 px-4 py-2 rounded-md text-sm font-medium transition-colors text-white">
+                <Link href="/dashboard" className="hidden xl:block hover:bg-slate-700 px-4 py-2 rounded-md text-sm font-medium transition-colors text-white">
                   Dashboard
                 </Link>
                 <Link href="/dashboard/jobs" className="hover:bg-slate-700 px-4 py-2 rounded-md text-sm font-medium transition-colors text-white">
                   Jobs
-                </Link>
-                <Link href="/find-jobs" className="hover:bg-slate-700 px-4 py-2 rounded-md text-sm font-medium transition-colors text-white">
-                  Browse
                 </Link>
                 <Link href="/contracts" className="hover:bg-slate-700 px-4 py-2 rounded-md text-sm font-medium transition-colors text-white">
                   Contracts
@@ -611,7 +607,10 @@ export default function AuthenticatedHeader() {
             </div>
 
             {/* Right - Actions & Profile */}
-            <div className="flex-1 flex items-center justify-end space-x-4">
+            <div className="flex items-center justify-end space-x-4">
+
+              {/* Wallet Widget */}
+              <WalletWidget />
 
               {/* File/Manage Dropdown */}
               <div className="relative" ref={fileDropdownRef}>
@@ -841,15 +840,7 @@ export default function AuthenticatedHeader() {
                 </Button>
               </Link>
 
-              {/* Wallet */}
-              <Link href="/wallet" className="flex items-center px-3 py-1.5 rounded-md hover:bg-slate-700 transition-colors">
-                <div className="flex items-center space-x-2 text-sm cursor-pointer">
-                  <Wallet className="h-4 w-4 text-green-400" />
-                  <span className="text-green-400 font-medium">
-                    {walletUser?.balance ? `${walletUser.balance} SHM` : '₹0'}
-                  </span>
-                </div>
-              </Link>
+
 
               {/* Profile */}
               <div className="flex items-center">

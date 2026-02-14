@@ -16,6 +16,7 @@ import {
   FileText,
   TrendingUp,
   AlertCircle,
+  Coins,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 
@@ -206,8 +207,8 @@ export default function MyProjectsPage() {
                           <CardTitle className="text-xl mb-2">{job.title}</CardTitle>
                           <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
                             <span className="flex items-center gap-1">
-                              <DollarSign className="h-4 w-4" />$
-                              {job.budget_min.toLocaleString()} - ${job.budget_max.toLocaleString()}
+                              <Coins className="h-4 w-4" />
+                              {job.budget_min.toLocaleString()} - {job.budget_max.toLocaleString()} SHM
                             </span>
                             <span className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
@@ -331,8 +332,8 @@ export default function MyProjectsPage() {
                           <CardTitle className="text-xl mb-2">{bid.job?.title || "Project"}</CardTitle>
                           <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
                             <span className="flex items-center gap-1">
-                              <DollarSign className="h-4 w-4" />
-                              Your bid: ${bid.amount.toLocaleString()}
+                              <Coins className="h-4 w-4" />
+                              Your bid: {bid.amount.toLocaleString()} SHM
                             </span>
                             <span className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />

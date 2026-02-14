@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
@@ -69,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
+  const loadingProfileRef = useRef<string | null>(null);
   const router = useRouter();
 
   // Check auth state on mount
@@ -78,7 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        await loadUserProfile(session.user);
+        // Avoid duplicate load if login() is already handling it
+        if (loadingProfileRef.current !== session.user.id) {
+          await loadUserProfile(session.user);
+        }
         setAuthChecked(true);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
@@ -96,8 +100,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session) {
         await loadUserProfile(session.user);
       }
-    } catch (error) {
-      console.error('Error checking auth:', error);
+    } catch (error: any) {
+      if (error.name !== 'AbortError' && !error.message?.includes('aborted')) {
+        console.error('Error checking auth:', error);
+      }
     } finally {
       setLoading(false);
       setAuthChecked(true);
@@ -105,6 +111,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function loadUserProfile(authUser: SupabaseUser) {
+    // Prevent multiple simultaneous profile loads for the same user
+    if (loadingProfileRef.current === authUser.id && user?.id === authUser.id) return;
+
+    loadingProfileRef.current = authUser.id;
+
     try {
       // Get user profile from database
       const { data: profile, error } = await supabase
@@ -130,8 +141,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAuthenticated(true);
         setAuthChecked(true);
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+        // Ignore abort errors
+        return;
+      }
       console.error('Error loading profile:', error);
+    } finally {
+      loadingProfileRef.current = null;
     }
   }
 

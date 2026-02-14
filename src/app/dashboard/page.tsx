@@ -9,11 +9,11 @@ import { Input } from "@/components/ui/input";
 import {
   Briefcase,
   Search,
-  DollarSign,
   Clock,
   MapPin,
   TrendingUp,
   Users,
+  Coins,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 
@@ -179,8 +179,8 @@ export default function DashboardPage() {
                       </Link>
                       <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
                         <span className="flex items-center gap-1">
-                          <DollarSign className="h-4 w-4" />
-                          ${job.budget_min.toLocaleString()} - ${job.budget_max.toLocaleString()}
+                          <Coins className="h-4 w-4" />
+                          {job.budget_min.toLocaleString()} - {job.budget_max.toLocaleString()} SHM
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />

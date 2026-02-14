@@ -36,8 +36,8 @@ export function LoginForm() {
     const result = await login(email, password);
     if (!result.success) {
       setError(result.error || "Invalid email or password");
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleGoogleSignIn = async () => {

@@ -17,6 +17,9 @@ import {
     AlertCircle
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { useWallet } from "@/contexts/wallet-context";
+import { LockTokensModal } from "@/components/jobs/lock-tokens-modal";
+import { tokenContract } from "@/lib/contracts/token-contract";
 
 interface Milestone {
     title: string;
@@ -51,12 +54,16 @@ interface Project {
 export default function ProjectBidsPage({ params }: { params: Promise<{ jobId: string }> }) {
     const router = useRouter();
     const { user } = useAuth();
+    const { user: walletUser, refreshBalance } = useWallet();
     const { jobId } = React.use(params);
 
     const [project, setProject] = useState<Project | null>(null);
     const [bids, setBids] = useState<Bid[]>([]);
     const [loading, setLoading] = useState(true);
     const [accepting, setAccepting] = useState<string | null>(null);
+    const [selectedBid, setSelectedBid] = useState<Bid | null>(null);
+    const [isLockModalOpen, setIsLockModalOpen] = useState(false);
+    const [processingLock, setProcessingLock] = useState(false);
 
     useEffect(() => {
         fetchBids();
@@ -88,28 +95,50 @@ export default function ProjectBidsPage({ params }: { params: Promise<{ jobId: s
         }
     };
 
-    const handleAcceptBid = async (bidId: string) => {
-        if (!confirm('Accept this bid? Funds will be locked in escrow and the project will be assigned to this freelancer.')) return;
+    const handleAcceptBid = (bid: Bid) => {
+        setSelectedBid(bid);
+        setIsLockModalOpen(true);
+    };
+
+    const handleLockAndAccept = async () => {
+        if (!selectedBid) return;
+        setProcessingLock(true);
+        setAccepting(selectedBid.id);
 
         try {
-            setAccepting(bidId);
-            const response = await fetch(`/api/bids/${bidId}/accept`, {
-                method: 'POST'
+            // 1. Lock tokens via smart contract
+            // In a real implementation, we would lock exactly the bid amount
+            console.log(`Locking ${selectedBid.amount} tokens for bid ${selectedBid.id}`);
+
+            // Ensure freelancer_id is treated as address. TODO: specific validation
+            const txHash = await tokenContract.lockTokens(jobId, selectedBid.amount.toString(), selectedBid.freelancer_id);
+            console.log('Tokens locked, tx:', txHash);
+
+            // 2. Call API to accept bid
+            const response = await fetch(`/api/bids/${selectedBid.id}/accept`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transactionHash: txHash })
             });
 
             if (!response.ok) {
                 const error = await response.json();
-                alert(`Failed to accept bid: ${error.error || 'Unknown error'}`);
-                return;
+                throw new Error(error.error || 'Failed to accept bid');
             }
 
             const data = await response.json();
-            alert('Bid accepted! Contract created successfully.');
+
+            // 3. Refresh balance to show deduction
+            await refreshBalance();
+
+            setIsLockModalOpen(false);
+            alert('Bid accepted! Tokens locked and contract created successfully.');
             router.push(`/contracts/${data.contractId}`);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error accepting bid:', error);
-            alert('Failed to accept bid. Please try again.');
+            alert(`Failed to accept bid: ${error.message || error}`);
         } finally {
+            setProcessingLock(false);
             setAccepting(null);
         }
     };
@@ -230,12 +259,12 @@ export default function ProjectBidsPage({ params }: { params: Promise<{ jobId: s
                                                     View Profile
                                                 </Button>
                                                 <Button
-                                                    onClick={() => handleAcceptBid(bid.id)}
+                                                    onClick={() => handleAcceptBid(bid)}
                                                     disabled={accepting === bid.id}
                                                     className="flex-1 bg-green-600 hover:bg-green-700"
                                                 >
                                                     <CheckCircle className="h-4 w-4 mr-2" />
-                                                    {accepting === bid.id ? 'Accepting...' : 'Accept Bid'}
+                                                    {accepting === bid.id ? 'Processing...' : 'Accept Bid'}
                                                 </Button>
                                             </div>
                                         </CardContent>
@@ -245,6 +274,19 @@ export default function ProjectBidsPage({ params }: { params: Promise<{ jobId: s
                         )}
                     </CardContent>
                 </Card>
+
+                {selectedBid && (
+                    <LockTokensModal
+                        isOpen={isLockModalOpen}
+                        onClose={() => !processingLock && setIsLockModalOpen(false)}
+                        onConfirm={handleLockAndAccept}
+                        amount={selectedBid.amount}
+                        recipientAddress={selectedBid.freelancer?.id || '0x...'} // In real app, bid should have wallet address
+                        recipientName={selectedBid.freelancer?.name || 'Freelancer'}
+                        jobTitle={project?.title || 'Project'}
+                        isLoading={processingLock}
+                    />
+                )}
             </div>
         </div>
     );

@@ -2,15 +2,22 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
+import { useWallet } from '@/contexts/wallet-context';
+import { TokenInput } from '@/components/ui/token-input';
 import { redirect, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, ArrowRight, Check, Upload, X, Plus, FileText } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Upload, X, Plus, FileText, AlertTriangle } from 'lucide-react';
 import Logo from '@/components/logo';
 import Link from 'next/link';
 import { AgreementModal } from '@/components/dashboard/agreement-modal';
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ProjectData {
   title: string;
@@ -20,11 +27,11 @@ interface ProjectData {
   category: string;
   subcategory: string;
   budgetType: 'fixed' | 'hourly' | '';
-  budgetRange: string;
-  duration: string;
+  budgetAmount: string; // Changed from budgetRange
+  startDate: string;
+  endDate: string;
   experienceLevel: string;
   skills: string[];
-  location: string;
   location: string;
   visibility: 'public' | 'private';
   clientSignature?: string;
@@ -62,6 +69,7 @@ const skillSuggestions = {
 
 export default function PostProjectPage() {
   const { user } = useAuth();
+  const { user: walletUser } = useWallet();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [projectData, setProjectData] = useState<ProjectData>({
@@ -72,8 +80,9 @@ export default function PostProjectPage() {
     category: '',
     subcategory: '',
     budgetType: '',
-    budgetRange: '',
-    duration: '',
+    budgetAmount: '',
+    startDate: '',
+    endDate: '',
     experienceLevel: '',
     skills: [],
     location: 'anywhere',
@@ -112,8 +121,13 @@ export default function PostProjectPage() {
         break;
       case 5:
         if (!projectData.budgetType) newErrors.budgetType = 'Please select budget type';
-        if (!projectData.budgetRange) newErrors.budgetRange = 'Please select budget range';
-        if (!projectData.duration) newErrors.duration = 'Please select project duration';
+        if (!projectData.budgetAmount) newErrors.budgetAmount = 'Please enter a budget amount';
+        if (projectData.budgetAmount && isNaN(parseFloat(projectData.budgetAmount))) newErrors.budgetAmount = 'Please enter a valid amount';
+        if (!projectData.startDate) newErrors.startDate = 'Please select a start date';
+        if (!projectData.endDate) newErrors.endDate = 'Please select an end date';
+        if (projectData.startDate && projectData.endDate && new Date(projectData.startDate) >= new Date(projectData.endDate)) {
+          newErrors.endDate = 'End date must be after start date';
+        }
         if (!projectData.experienceLevel) newErrors.experienceLevel = 'Please select experience level';
         break;
     }
@@ -160,32 +174,7 @@ export default function PostProjectPage() {
     try {
       setLoading(true);
 
-      // Extract numeric values from budget range
-      let budget_min = 0;
-      let budget_max = 0;
-
-      switch (projectData.budgetRange) {
-        case 'under-500':
-          budget_min = 0;
-          budget_max = 500;
-          break;
-        case '500-1000':
-          budget_min = 500;
-          budget_max = 1000;
-          break;
-        case '1000-5000':
-          budget_min = 1000;
-          budget_max = 5000;
-          break;
-        case '5000-10000':
-          budget_min = 5000;
-          budget_max = 10000;
-          break;
-        case 'over-10000':
-          budget_min = 10000;
-          budget_max = 50000;
-          break;
-      }
+      const budgetValue = parseFloat(projectData.budgetAmount);
 
       const response = await fetch('/api/jobs', {
         method: 'POST',
@@ -198,10 +187,12 @@ export default function PostProjectPage() {
           category: projectData.category,
           subcategory: projectData.subcategory,
           budget_type: projectData.budgetType,
-          budget_range: projectData.budgetRange,
-          budget_min,
-          budget_max,
-          duration: projectData.duration,
+          budget_range: `${budgetValue}`, // Required by database
+          budget_amount: budgetValue, // New field
+          budget_min: budgetValue, // Legacy support
+          budget_max: budgetValue, // Legacy support
+          start_date: projectData.startDate,
+          end_date: projectData.endDate,
           experience_level: projectData.experienceLevel,
           skills: projectData.skills,
           location_preference: projectData.location,
@@ -436,43 +427,54 @@ export default function PostProjectPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Budget Range *</label>
-                <select
-                  value={projectData.budgetRange}
-                  onChange={(e) => setProjectData(prev => ({ ...prev, budgetRange: e.target.value }))}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.budgetRange ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                >
-                  <option value="">Select budget range</option>
-                  <option value="under-500">Under $500</option>
-                  <option value="500-1000">$500 - $1,000</option>
-                  <option value="1000-5000">$1,000 - $5,000</option>
-                  <option value="5000-10000">$5,000 - $10,000</option>
-                  <option value="over-10000">Over $10,000</option>
-                </select>
-                {errors.budgetRange && <p className="text-red-500 text-sm mt-1">{errors.budgetRange}</p>}
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  {projectData.budgetType === 'hourly' ? 'Hourly Rate' : 'Fixed Budget'} *
+                </label>
+                <TokenInput
+                  value={projectData.budgetAmount}
+                  onChange={(e) => setProjectData(prev => ({ ...prev, budgetAmount: e.target.value }))}
+                  availableBalance={walletUser?.balance}
+                  error={errors.budgetAmount}
+                  placeholder={projectData.budgetType === 'hourly' ? "e.g. 50.00" : "e.g. 500.00"}
+                  helperText={
+                    <span className="text-slate-500 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Tokens will be locked only when you accept a bid.
+                    </span>
+                  }
+                />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Project Duration *</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {[
-                    { key: 'less-1-week', label: 'Less than 1 week' },
-                    { key: '1-4-weeks', label: '1-4 weeks' },
-                    { key: '1-3-months', label: '1-3 months' },
-                    { key: 'more-3-months', label: 'More than 3 months' }
-                  ].map((duration) => (
-                    <button
-                      key={duration.key}
-                      onClick={() => setProjectData(prev => ({ ...prev, duration: duration.key }))}
-                      className={`p-3 border-2 rounded-lg transition-colors ${projectData.duration === duration.key ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                    >
-                      <p className="font-medium text-gray-900 text-sm">{duration.label}</p>
-                    </button>
-                  ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Start Date *</label>
+                  <input
+                    type="date"
+                    value={projectData.startDate ? new Date(projectData.startDate).toISOString().split('T')[0] : ''}
+                    onChange={(e) => setProjectData(prev => ({ ...prev, startDate: e.target.value ? new Date(e.target.value).toISOString() : '' }))}
+                    min={new Date().toISOString().split('T')[0]}
+                    className={cn(
+                      "w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500",
+                      errors.startDate ? "border-red-500" : "border-gray-300"
+                    )}
+                  />
+                  {errors.startDate && <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>}
                 </div>
-                {errors.duration && <p className="text-red-500 text-sm mt-1">{errors.duration}</p>}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">End Date *</label>
+                  <input
+                    type="date"
+                    value={projectData.endDate ? new Date(projectData.endDate).toISOString().split('T')[0] : ''}
+                    onChange={(e) => setProjectData(prev => ({ ...prev, endDate: e.target.value ? new Date(e.target.value).toISOString() : '' }))}
+                    min={projectData.startDate ? new Date(projectData.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+                    className={cn(
+                      "w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500",
+                      errors.endDate ? "border-red-500" : "border-gray-300"
+                    )}
+                  />
+                  {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
+                </div>
               </div>
 
               <div>
@@ -719,12 +721,19 @@ export default function PostProjectPage() {
 
                   <div>
                     <h3 className="font-semibold text-gray-900">Budget</h3>
-                    <p className="text-gray-700">{projectData.budgetType === 'fixed' ? 'Fixed Price' : 'Hourly'} - {projectData.budgetRange}</p>
+                    <p className="text-gray-700">
+                      {projectData.budgetType === 'fixed' ? 'Fixed Price' : 'Hourly'} -{' '}
+                      <span className="font-medium">{projectData.budgetAmount} SHM</span>
+                    </p>
                   </div>
 
                   <div>
-                    <h3 className="font-semibold text-gray-900">Duration</h3>
-                    <p className="text-gray-700">{projectData.duration}</p>
+                    <h3 className="font-semibold text-gray-900">Project Timeline</h3>
+                    <p className="text-gray-700">
+                      {projectData.startDate && projectData.endDate
+                        ? `${format(new Date(projectData.startDate), "PPP")} → ${format(new Date(projectData.endDate), "PPP")}`
+                        : 'Not selected'}
+                    </p>
                   </div>
 
                   <div>
