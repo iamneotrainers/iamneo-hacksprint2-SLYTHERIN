@@ -534,10 +534,27 @@ export default function ContractDetailPage({ params }: { params: Promise<{ contr
                         </div>
                     </CardHeader>
 
-                    {/* Dispute Dialog Removed - Redirects to /disputes/new now */}
+                    {/* Manual Feedback Trigger for Completed Contracts */}
+                    {/* Show if contract is completed (all milestones paid) and user hasn't left feedback yet */}
+                    {/* Note: We rely on manual trigger for now as 'completed' status might be complex to derive without full state */}
+                    <div className="px-6 pb-4">
+                        {(isFreelancer || isClient) && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowFeedbackModal(true)}
+                                className="w-full sm:w-auto border-dashed border-gray-300 text-gray-500 hover:text-blue-600 hover:border-blue-600"
+                            >
+                                <Star className="h-4 w-4 mr-2" />
+                                {isFreelancer ? "Rate Client & Platform" : "Rate Freelancer & Platform"}
+                            </Button>
+                        )}
+                    </div>
 
                     <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {/* ... Content ... */}
+
                             {/* Locked Amount */}
                             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                                 <div className="flex items-center gap-2 mb-2">
@@ -884,46 +901,51 @@ export default function ContractDetailPage({ params }: { params: Promise<{ contr
             />
 
             {/* Sign Prompt for Freelancer OR Client */}
-            {((isFreelancer && !contract.freelancer_signature) || (isClient && !contract.client_signature)) && (
-                <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <Card className="max-w-md w-full border-none shadow-2xl rounded-[32px] overflow-hidden">
-                        <div className="bg-blue-600 p-8 text-white text-center">
-                            <div className="h-16 w-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
-                                <FileText className="h-8 w-8 text-white" />
-                            </div>
-                            <h2 className="text-2xl font-black mb-2 uppercase tracking-tight">Signature Required</h2>
-                            <p className="text-blue-100 text-sm font-bold">You must sign the Digital Service Agreement before proceeding.</p>
-                        </div>
-                        <CardContent className="p-8 space-y-4">
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2 text-slate-600">
-                                    <div className="h-2 w-2 rounded-full bg-blue-500" />
-                                    <p className="text-xs font-bold uppercase tracking-widest">Legally Binding</p>
+            {
+                ((isFreelancer && !contract.freelancer_signature) || (isClient && !contract.client_signature)) && (
+                    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <Card className="max-w-md w-full border-none shadow-2xl rounded-[32px] overflow-hidden">
+                            <div className="bg-blue-600 p-8 text-white text-center">
+                                <div className="h-16 w-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
+                                    <FileText className="h-8 w-8 text-white" />
                                 </div>
-                                <p className="text-xs text-slate-500 leading-relaxed">By signing, you agree to the milestone structure, token-based payment model, and intellectual property transfer upon project completion.</p>
+                                <h2 className="text-2xl font-black mb-2 uppercase tracking-tight">Signature Required</h2>
+                                <p className="text-blue-100 text-sm font-bold">You must sign the Digital Service Agreement before proceeding.</p>
                             </div>
-                            <Button
-                                className="w-full h-12 rounded-2xl bg-slate-900 hover:bg-blue-700 text-white font-black uppercase text-xs tracking-widest shadow-xl transition-all"
-                                onClick={() => setShowSigningModal(true)}
-                                disabled={isSigning}
-                            >
-                                {isSigning ? "Signing..." : "Proceed to Sign"}
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
+                            <CardContent className="p-8 space-y-4">
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-slate-600">
+                                        <div className="h-2 w-2 rounded-full bg-blue-500" />
+                                        <p className="text-xs font-bold uppercase tracking-widest">Legally Binding</p>
+                                    </div>
+                                    <p className="text-xs text-slate-500 leading-relaxed">By signing, you agree to the milestone structure, token-based payment model, and intellectual property transfer upon project completion.</p>
+                                </div>
+                                <Button
+                                    className="w-full h-12 rounded-2xl bg-slate-900 hover:bg-blue-700 text-white font-black uppercase text-xs tracking-widest shadow-xl transition-all"
+                                    onClick={() => setShowSigningModal(true)}
+                                    disabled={isSigning}
+                                >
+                                    {isSigning ? "Signing..." : "Proceed to Sign"}
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )
+            }
             {/* Feedback Modal */}
-            {contract && (
-                <FeedbackModal
-                    isOpen={showFeedbackModal}
-                    onClose={() => setShowFeedbackModal(false)}
-                    projectId={contract.project_id}
-                    freelancerId={contract.freelancer_id}
-                    freelancerName={contract.freelancer?.name || 'Freelancer'}
-                    projectTitle={contract.project?.title || 'Project'}
-                />
-            )}
+            {
+                contract && (
+                    <FeedbackModal
+                        isOpen={showFeedbackModal}
+                        onClose={() => setShowFeedbackModal(false)}
+                        projectId={contract.project_id}
+                        // For freelancer, review client. For client, review freelancer.
+                        freelancerId={isFreelancer ? contract.client_id : contract.freelancer_id}
+                        freelancerName={isFreelancer ? contract.client?.name || 'Client' : contract.freelancer?.name || 'Freelancer'}
+                        projectTitle={contract.project?.title || 'Project'}
+                    />
+                )
+            }
         </div >
     );
 }

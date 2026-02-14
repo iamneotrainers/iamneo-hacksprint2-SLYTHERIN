@@ -76,13 +76,29 @@ export default function ConditionalLayout({
     }
   }, [isAuthenticated, authChecked, pathname, router, isAuthenticatedRoute]);
 
-  // While we don't know the auth state, show a spinner to avoid FOUC
+  // While we don't know the auth state
   if (!authChecked) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    // If it's a protected route, we MUST wait to prevent flashing protected content or redirecting prematurely
+    if (isAuthenticatedRoute) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      );
+    }
+
+    // If it's an Auth page (login/signup), wait to check if we need to redirect logged-in users
+    if (isAuthPage) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      );
+    }
+
+    // For public pages (Landing page, etc.), render immediately to improve perceived performance!
+    // The content will update if auth state changes from false -> true.
+    return <PublicLayout>{children}</PublicLayout>;
   }
 
   // Handle protected routes while unauthenticated (waiting for redirect in useEffect)

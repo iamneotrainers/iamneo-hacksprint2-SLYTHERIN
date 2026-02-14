@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useRef, useEffect } from "react";
 import { useWallet } from "@/contexts/wallet-context";
 import { Button } from "@/components/ui/button";
@@ -58,8 +60,8 @@ export function WalletWidget() {
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={`flex items-center gap-3 px-3 py-1.5 rounded-lg border transition-all duration-200 ${isOpen
-                        ? "bg-slate-700 border-green-500/50"
-                        : "bg-slate-800 border-slate-600 hover:border-slate-500"
+                    ? "bg-slate-700 border-green-500/50"
+                    : "bg-slate-800 border-slate-600 hover:border-slate-500"
                     }`}
             >
                 <div className="flex flex-col items-end text-right mr-1">

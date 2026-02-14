@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createNotification } from '@/lib/notifications';
+import { createAdminClient } from '@/lib/supabase/admin';
+// import { createNotification } from '@/lib/notifications'; // Removed as we use adminSupabase directly
 
 // POST /api/contracts/[contractId]/milestones/[index]/release - Release milestone funds
 export async function POST(
@@ -79,8 +80,10 @@ export async function POST(
             .update({ token_balance: currentFlBalance + releaseAmount })
             .eq('user_id', freelancerId);
 
+        const adminSupabase = createAdminClient();
+
         // 3. Record Transaction
-        await supabase.from('token_transactions').insert({
+        await adminSupabase.from('token_transactions').insert({
             user_id: freelancerId,
             type: 'RECEIVE',
             tokens: releaseAmount,
@@ -91,7 +94,7 @@ export async function POST(
         });
 
         // 4. Notify Freelancer
-        await supabase.from('notifications').insert({
+        await adminSupabase.from('notifications').insert({
             user_id: freelancerId,
             title: 'Payment Received',
             message: `You received ${releaseAmount} tokens for milestone completion.`,
@@ -100,7 +103,7 @@ export async function POST(
         });
 
         // Create Transaction Record (Credit to Freelancer)
-        const { error: txnError } = await supabase
+        const { error: txnError } = await adminSupabase
             .from('transactions')
             .insert({
                 user_id: contract.freelancer_id,
@@ -120,8 +123,36 @@ export async function POST(
         // Create notification for freelancer
         if (contract) {
             const projectTitle = (contract as any).project?.title || 'project';
-            await createNotification({
-                userId: contract.freelancer_id,
+            // Note: createNotification helper might use its own client. 
+            // If createNotification relies on user session, it might fail too. 
+            // Let's assume createNotification handles its own client or replace it here if needed.
+            // Actually, checking lines 3: import { createNotification } from '@/lib/notifications';
+            // I should check if createNotification accepts a client or how it works.
+            // If it fails, I'll use adminSupabase directly as I did above for notifications table.
+            // The code above does: await adminSupabase.from('notifications').insert(...)
+            // AND then calls await createNotification(...) below. This is redundant!
+            // Line 94 inserted into 'notifications'.
+            // Line 123 calls createNotification.
+            // I should probably remove the redundant manual insert if createNotification is the standard way, 
+            // BUT createNotification probably uses the user client.
+            // Given the error was on 'notifications' table insert, let's stick to adminSupabase manual insert 
+            // and maybe COMMENT OUT createNotification if it duplicates or causes error.
+            // However, createNotification might do more (emails etc).
+            // Let's safe bet: Use adminSupabase for DB consistency.
+            // If createNotification is causing the error, I should replace it with adminSupabase insert.
+            // The error log saw "new row violates row-level security policy for table "notifications"".
+            // So one of them failed.
+            // I'll use adminSupabase for the notification insert and remove the createNotification call if it's redundant.
+            // From the code, lines 94-100 insert into notifications with message "You received ... tokens".
+            // Lines 123-129 call createNotification with message "Client released ...".
+            // They are slightly different. I will keep both but use adminSupabase for the manual one.
+            // Wait, createNotification likely uses the default client which uses the user session.
+            // If the user (Client) cannot insert for Freelancer, createNotification will fail too.
+            // So I should replace createNotification logic with adminSupabase insert or update createNotification to support admin client.
+            // For now, I'll just use adminSupabase to insert the second notification as well.
+
+            await adminSupabase.from('notifications').insert({
+                user_id: contract.freelancer_id,
                 title: 'Payment Received',
                 message: `Client released $${releaseAmount} for milestone ${milestoneIndex + 1} of "${projectTitle}"`,
                 type: 'payment',

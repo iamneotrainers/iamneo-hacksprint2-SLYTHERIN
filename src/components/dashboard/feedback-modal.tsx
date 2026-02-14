@@ -26,6 +26,7 @@ export function FeedbackModal({
 }: FeedbackModalProps) {
     const [step, setStep] = useState(1);
     const [freelancerRating, setFreelancerRating] = useState(0);
+    const [feedback, setFeedback] = useState("");
     const [siteRating, setSiteRating] = useState(0);
     const [siteFeedback, setSiteFeedback] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,8 +40,9 @@ export function FeedbackModal({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     projectId,
-                    freelancerId,
-                    freelancerRating,
+                    revieweeId: freelancerId, // Generalizing this
+                    rating: freelancerRating,
+                    feedback, // New field
                     siteRating,
                     siteFeedback
                 })
@@ -86,22 +88,33 @@ export function FeedbackModal({
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="text-center text-xl">
-                        {step === 1 ? "Rate Freelancer's Work" : "Rate TrustLance"}
+                        {step === 1 ? `Rate ${freelancerName}` : "Rate TrustLance"}
                     </DialogTitle>
                     <DialogDescription className="text-center">
                         {step === 1
-                            ? `How was your experience working with ${freelancerName} on "${projectTitle}"?`
+                            ? `How was your experience working on "${projectTitle}"?`
                             : "How likely are you to recommend TrustLance to a friend?"}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="py-4">
                     {step === 1 && (
-                        <div className="text-center">
-                            <StarRating rating={freelancerRating} setRating={setFreelancerRating} />
-                            <p className="text-sm text-gray-500 font-medium mt-2">
-                                {freelancerRating === 5 ? "Excellent!" : freelancerRating > 0 ? "Thanks for rating!" : "Tap a star to rate"}
-                            </p>
+                        <div className="space-y-6">
+                            <div className="text-center pt-2">
+                                <StarRating rating={freelancerRating} setRating={setFreelancerRating} />
+                                <p className="text-sm text-gray-500 font-medium mt-2">
+                                    {freelancerRating === 5 ? "Excellent!" : freelancerRating > 0 ? "Thanks for rating!" : "Tap a star to rate"}
+                                </p>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-gray-900 ml-1">Your Review</label>
+                                <Textarea
+                                    placeholder={`Describe your experience working with ${freelancerName}...`}
+                                    value={feedback}
+                                    onChange={(e) => setFeedback(e.target.value)}
+                                    className="resize-none h-32 text-base p-4"
+                                />
+                            </div>
                         </div>
                     )}
 
